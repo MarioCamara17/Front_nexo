@@ -1,0 +1,46 @@
+@font-face {
+    font-family: 'source-sans-pro';
+    src: url('../../../assets/fonts/SourceSansPro-Regular.otf');
+    font-display: swap;
+}
+
+ion-tab-bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 5px 5px 5px 5px rgba(0, 0, 0, 0.5);
+    border: none;
+    height: 9vh;
+}
+
+ion-tab-button {
+    --color: #4D4D4D;
+    --color-selected: #059FAE;
+    --ripple-color: rgba(71, 159, 174, 0.8);
+    font-family: 'source-sans-pro';
+    font-weight: bold;
+    
+    transition: all 0.3s ease;
+}
+
+ion-tab-button.map-tab {
+    --color: #DEC8A3;
+    --color-selected: #eab253;
+
+    mat-icon {
+        font-size: 3.4rem;
+        width: 3.4rem;
+        height: 3.4rem;
+    }
+}
+
+mat-icon {
+    font-size: 2.7rem;
+    width: 2.7rem;
+    height: 2.7rem;
+}
+
+ion-tab-button.tab-selected {
+    transform: scale(1.1);
+}
+

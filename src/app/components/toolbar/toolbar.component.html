@@ -1,0 +1,20 @@
+<ion-header *ngIf="showToolbar">
+  <ion-toolbar>
+
+    <ion-buttons slot="start" *ngIf="showBackButton">
+      <ion-button (click)="goBack()">
+        <mat-icon>arrow_back</mat-icon>
+      </ion-button>
+    </ion-buttons>
+
+    <ion-title>{{ title }}</ion-title>
+
+    <ion-buttons slot="end" *ngIf="!showBackButton">
+      <ion-button [routerLink] = "['/profile']" type="button">
+        <ion-avatar>
+          <img [src]="user.avatar || '../../../assets/icon/default-avatar.svg'" alt="default-avatar-img">
+        </ion-avatar>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>

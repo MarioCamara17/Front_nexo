@@ -1,0 +1,147 @@
+.card-container {
+  display: flex;
+  flex-direction: row;
+  align-items: end;
+}
+
+ion-card {
+  --background: #dec8a3;
+  width: 40vw !important;
+  height: auto !important;
+  display: flex;
+  flex-direction: column;
+  margin-top: 2 !important;
+  border-radius: 1vh;
+}
+
+.favorite-button {
+  position: absolute;
+  margin-top: 0.5vh;
+  margin-left: 33vw;
+  background-color: transparent;
+  z-index: 10;
+  border: none;
+  cursor: pointer;
+  
+  &.processing {
+    opacity: 0.6;
+    cursor: not-allowed;
+    animation: pulse 1.5s infinite;
+  }
+
+  mat-icon {
+    transition: color 0.2s ease;
+    color: #fff;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.favorite {
+  background: linear-gradient(to right, #FFDB70, #D6A206);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+}
+
+.no-favorite {
+  color: #fff !important;
+}
+
+ion-card > img {
+  width: 100%;
+  height: 12vh;
+  object-fit: cover;
+  cursor: pointer;
+  z-index: 9;
+}
+
+ion-card-header {
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  min-height: 3vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+ion-card-title {
+  font-size: 0.9rem !important;
+  line-height: 1 !important;
+  color: #424242;
+}
+
+.favorite-info-container {
+  margin-bottom: 0.5em;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4em;
+  padding: 0.5em 0 0.5em 1em;
+}
+
+.visit-date-container {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+}
+
+.visit-date-container p,
+.is-visited-container p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.is-visited-container {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.2em 0.4em;
+}
+
+.visited-button {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  
+  &.processing {
+    opacity: 0.6;
+    cursor: not-allowed;
+    animation: pulse 1.5s infinite;
+  }
+  
+  mat-icon {
+    color: #e0e0e0;
+  }
+}
+
+.visited {
+  color: #059FAE !important;
+}
+
+.not-visited {
+  color: #e0e0e0 !important;
+}
+
+.delete-button {
+  max-height: 2em;
+  max-width: 6em;
+  background-color: #d9534f;
+  color: #fff;
+  border: none;
+  padding: 0.3em 1em;
+  border-radius: 0.5em;
+  cursor: pointer;
+  font-weight: bold;
+}

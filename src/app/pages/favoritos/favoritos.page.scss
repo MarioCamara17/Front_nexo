@@ -1,0 +1,23 @@
+ion-content {
+  h2 {
+    margin-top: 10vh;
+    margin-left: 5vw;
+  }
+
+  p {
+    margin-left: 5vw;
+  }
+}
+
+#favorites-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding: 2vh;
+  align-items: flex-end;
+}
+
+#favorites-container strong {
+  font-size: 20px;
+  line-height: 26px;
+}
