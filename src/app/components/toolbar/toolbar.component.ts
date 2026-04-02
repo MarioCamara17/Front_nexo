@@ -23,7 +23,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   currentRoute: string = '';
   showBackButton: boolean = false;
   showToolbar: boolean = true;
-  title: string = 'BinMap';
+  title: string = 'Nexo';
   user: User = {first_name: '', last_name: '', email: '', avatar: '', description: ''};
 
   private routerSubscription?: Subscription;
@@ -85,7 +85,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
           this.title = 'Configuración';
           this.showBackButton = true;
         } else {
-          this.title = 'BinMap';
+          this.title = 'Nexo';
           this.showBackButton = false;
         }
   }
