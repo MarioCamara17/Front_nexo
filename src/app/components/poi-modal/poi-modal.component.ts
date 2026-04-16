@@ -16,7 +16,7 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
   templateUrl: './poi-modal.component.html',
   styleUrls: ['./poi-modal.component.scss'],
   standalone: true,
-  imports: [IonContent, CommonModule, MatIcon, IonButton],
+  imports: [IonContent, CommonModule, MatIcon],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class PoiModalComponent implements OnInit, OnDestroy {

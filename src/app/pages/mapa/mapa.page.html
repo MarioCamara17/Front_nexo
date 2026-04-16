@@ -1,5 +1,41 @@
 <ion-content [fullscreen]="true">
-  <div class="map-container">
-    <app-leaflet-map [pois]="pois" (poiClicked)="abrirPoiModal($event)"></app-leaflet-map>
+
+  <!-- HEADER SUPERIOR -->
+  <div class="map-header">
+    <h1>🗺️ Explora</h1>
+    <p>Descubre lugares y gana puntos</p>
   </div>
+
+  <!-- FILTROS -->
+  <div class="map-filters">
+    <button class="filter active">Todos</button>
+    <button class="filter">Cultura</button>
+    <button class="filter">Naturaleza</button>
+    <button class="filter">Historia</button>
+    <button class="filter">Aventura</button>
+  </div>
+
+  <!-- MAPA -->
+  <div class="map-container">
+    <app-leaflet-map
+      [pois]="pois"
+      (poiClicked)="abrirPoiModal($event)">
+    </app-leaflet-map>
+  </div>
+
+  <!-- TARJETA INFERIOR (POI SELECCIONADO) -->
+  <div class="poi-preview" *ngIf="selectedPoi">
+    <img [src]="selectedPoi.image" alt="">
+
+    <div class="info">
+      <h3>{{ selectedPoi.name }}</h3>
+      <p>{{ selectedPoi.description }}</p>
+
+      <div class="meta">
+        <span>⭐ 50 pts</span>
+        <span>📍 Turismo</span>
+      </div>
+    </div>
+  </div>
+
 </ion-content>

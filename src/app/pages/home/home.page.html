@@ -1,20 +1,57 @@
 <ion-content>
+
+  <!-- REFRESH -->
   <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
     <ion-refresher-content></ion-refresher-content>
   </ion-refresher>
 
   <div class="home-container">
-    <h1>Puntos de Interés</h1>
-    <div class="poi-grid">
-      <app-poi-card
-        *ngFor="let poi of poiList"
-        [id]="poi.id"
-        [title]="poi.name"
-        [info]="poi.description"
-        [image]="poi.image"
-        [video]="poi.video"
-        (cardClick)="openModal(poi)"
-      ></app-poi-card>
+
+    <!-- HEADER / BIENVENIDA -->
+    <div class="welcome-section">
+      <h1>Descubre Tabasco 🌿</h1>
+        <p>Explora su cultura, naturaleza y patrimonio</p>
     </div>
+
+    <!-- TARJETA DE PUNTOS -->
+    <div class="points-card">
+      <h2>⭐ Tus puntos</h2>
+      <p class="points">180 pts</p>
+      <small>Te faltan 20 pts para tu próxima insignia</small>
+    </div>
+
+    <!-- RUTAS DESTACADAS -->
+    <div class="section">
+      <h2>🗺️ Rutas recomendadas</h2>
+
+      <div class="route-card">
+        <h3>Ruta Cultural</h3>
+        <p>4 lugares • 200 pts</p>
+      </div>
+
+      <div class="route-card">
+        <h3>Ruta Natural</h3>
+        <p>3 lugares • 150 pts</p>
+      </div>
+    </div>
+
+    <!-- PUNTOS DE INTERÉS -->
+    <div class="section">
+      <h2>📍 Lugares para explorar</h2>
+
+      <div class="poi-grid">
+        <app-poi-card
+          *ngFor="let poi of poiList"
+          [id]="poi.id"
+          [title]="poi.name"
+          [info]="poi.description"
+          [image]="poi.image"
+          [video]="poi.video"
+          (cardClick)="openModal(poi)"
+        ></app-poi-card>
+      </div>
+    </div>
+
   </div>
+
 </ion-content>

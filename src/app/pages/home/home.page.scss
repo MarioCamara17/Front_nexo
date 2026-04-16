@@ -1,37 +1,85 @@
 ion-content {
-  padding-top: 20% !important;
+  --background: #f5f7fa;
 }
 
+/* CONTENEDOR GENERAL */
 .home-container {
   display: flex;
   flex-direction: column;
-  padding: 0 2vh;
-  margin-top: 2vh;
+  padding: 16px;
+  gap: 20px;
 }
 
-.home-container h1 {
-  font-size: 1.8rem;
-  color: #424242;
-  margin-bottom: 2vh;
+/* BIENVENIDA */
+.welcome-section h1 {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #1e1e1e;
+  margin: 0;
 }
 
+.welcome-section p {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+/* TARJETA DE PUNTOS */
+.points-card {
+  background: linear-gradient(135deg, #0f766e, #0ea5e9);
+  color: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+}
+
+.points-card h2 {
+  margin: 0;
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.points-card .points {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 5px 0;
+}
+
+.points-card small {
+  opacity: 0.8;
+}
+
+/* SECCIONES */
+.section h2 {
+  font-size: 1.2rem;
+  color: #1e1e1e;
+  margin-bottom: 10px;
+}
+
+/* TARJETAS DE RUTAS */
+.route-card {
+  background: white;
+  padding: 14px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.route-card h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.route-card p {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+/* GRID DE LUGARES */
 .poi-grid {
   display: flex;
   flex-wrap: wrap;
+  gap: 12px;
   justify-content: space-between;
-  gap: 2vh;
-}
-
-#inicio-container {
-  padding-top: 20% !important;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  padding: 2vh;
-  align-items: flex-end;
-}
-
-#inicio-container strong {
-  font-size: 20px;
-  line-height: 26px;
 }

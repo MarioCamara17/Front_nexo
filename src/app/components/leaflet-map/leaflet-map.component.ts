@@ -1,8 +1,6 @@
 import { Component, OnInit, Input, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
 import * as L from 'leaflet';
 import { Poi } from 'src/app/models/poi.model';
-import { PoiModalComponent } from '../poi-modal/poi-modal.component';
-import { ViewChild, ViewContainerRef, ComponentRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 
@@ -11,39 +9,41 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
   templateUrl: './leaflet-map.component.html',
   styleUrls: ['./leaflet-map.component.scss'],
   standalone: true,
-  imports: [CommonModule, PoiModalComponent],
+  imports: [CommonModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class LeafletMapComponent implements OnInit, OnChanges {
   @Input() pois: Poi[] = [];
   @Output() poiClicked = new EventEmitter<Poi>();
+
   map: L.Map | undefined;
   private markers: L.Marker[] = [];
-
-  selectedPoi: Poi | null = null;
-  showPoiPopup = false;
-  popupPosition = { x: 0, y: 0 };
   mapInitialized: boolean = false;
 
-  constructor() { }
+  constructor() {}
 
   ngOnInit() {
     setTimeout(() => {
-      this.map = L.map('mapId').setView([17.80943, -91.53860], 7);
+      this.map = L.map('mapId').setView([17.8409, -92.6189], 8);
+
       L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(this.map);
+
       this.mapInitialized = true;
-      console.log('LeafletMapComponent: Mapa inicializado. POIs actuales:', this.pois);
+
       if (this.pois.length > 0) {
         this.addMarkers();
       }
+
+      setTimeout(() => {
+        this.map?.invalidateSize();
+      }, 400);
     }, 0);
   }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['pois']) {
-      console.log('LeafletMapComponent: Cambios detectados en POIs:', changes['pois'].currentValue);
       if (this.mapInitialized && this.map) {
         this.clearMarkers();
         this.addMarkers();
@@ -51,84 +51,74 @@ export class LeafletMapComponent implements OnInit, OnChanges {
     }
   }
 
-  private addMarkers() {
-    console.log('LeafletMapComponent: Llamando a addMarkers. Número de POIs a añadir:', this.pois.length);
-    if (!this.map) return;
+  private getCategoryName(poi: Poi): string {
+    return poi.category?.name?.toLowerCase?.() || '';
+  }
 
-    const customIcon = L.icon({
-      iconUrl: '../../assets/icon/poi_icon.svg',
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -32]
-    });
+  private getIconByCategory(poi: Poi): L.Icon {
+    const category = this.getCategoryName(poi);
 
-    this.pois.forEach(poi => {
-      console.log(`LeafletMapComponent: Añadiendo marcador para POI: ${poi.name}, Lat: ${poi.latitude}, Lng: ${poi.longitude}`);
-      const marker = L.marker([
-        parseFloat(poi.latitude),
-        parseFloat(poi.longitude)
-      ], { icon: customIcon })
-        .addTo(this.map!);
+    let iconUrl = 'assets/icon/poi_icon.svg';
 
-      marker.on('click', () => {
-        this.openPoiModal(poi);
-      });
+    if (category.includes('naturaleza')) {
+      iconUrl = 'assets/icon/nature.svg';
+    } else if (category.includes('historia')) {
+      iconUrl = 'assets/icon/history.svg';
+    } else if (category.includes('cultura')) {
+      iconUrl = 'assets/icon/culture.svg';
+    }
 
-      marker.on('mousedown', (e: any) => {
-        // Detectar long press
-        let pressTimer: any;
-        marker.once('mouseup', () => {
-          clearTimeout(pressTimer);
-        });
-        marker.once('mouseout', () => {
-          clearTimeout(pressTimer);
-        });
-        pressTimer = setTimeout(() => {
-          this.openPoiPopup(poi, e.originalEvent);
-        }, 600); // 600ms para long press
-      });
-
-      this.markers.push(marker);
+    return L.icon({
+      iconUrl,
+      iconSize: [36, 36],
+      iconAnchor: [18, 36],
+      popupAnchor: [0, -30]
     });
   }
 
-  private getPoiCardHtml(poi: Poi): string {
-    return `
-      <div style="box-shadow:0 2px 8px #0002; border-radius:12px; overflow:hidden; background:#dec8a3; width:180px;">
-        <img src="${poi.image}" alt="${poi.name}" style="width:100%; height:90px; object-fit:cover; border-top-left-radius:12px; border-top-right-radius:12px;">
-        <div style="padding:8px;">
-          <h3 style="margin:0; font-size:1em; color:#424242;">${poi.name}</h3>
+  private addMarkers() {
+    if (!this.map) return;
+
+    this.pois.forEach(poi => {
+      const lat = parseFloat(poi.latitude);
+      const lng = parseFloat(poi.longitude);
+
+      if (isNaN(lat) || isNaN(lng)) return;
+
+      const marker = L.marker([lat, lng], {
+        icon: this.getIconByCategory(poi)
+      }).addTo(this.map!);
+
+      marker.on('click', () => {
+        this.poiClicked.emit(poi);
+      });
+
+      marker.bindTooltip(
+        `
+        <div style="text-align:center;">
+          <strong>${poi.name}</strong><br>
+          <small>${poi.category?.name || 'Turismo'}</small><br>
+          ⭐ +50 pts
         </div>
-      </div>
-    `;
+        `,
+        {
+          direction: 'top',
+          offset: [0, -20]
+        }
+      );
+
+      this.markers.push(marker);
+    });
+
+    if (this.markers.length > 0) {
+      const group = L.featureGroup(this.markers);
+      this.map.fitBounds(group.getBounds(), { padding: [30, 30] });
+    }
   }
 
   private clearMarkers() {
     if (!this.map) return;
     this.markers.forEach(marker => this.map!.removeLayer(marker));
     this.markers = [];
-  }
-
-  openPoiModal(poi: Poi) {
-    this.poiClicked.emit(poi);
-  }
-
-  openPoiPopup(poi: Poi, event: MouseEvent) {
-    this.selectedPoi = poi;
-    this.showPoiPopup = true;
-    // Calcular posición relativa al mapa
-    const mapDiv = document.getElementById('mapId');
-    if (mapDiv) {
-      const rect = mapDiv.getBoundingClientRect();
-      this.popupPosition = {
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top
-      };
-    }
-  }
-
-  closePoiPopup() {
-    this.showPoiPopup = false;
-    this.selectedPoi = null;
   }
 }

@@ -1,5 +1,59 @@
-<ion-content [fullscreen]="true">
-  <div id="tren-container">
-    <strong>Pagina del tren maya de la app</strong>
+<ion-content>
+
+  <div class="rewards-container">
+
+    <!-- HEADER -->
+    <div class="header">
+      <h1>🎖️ Recompensas</h1>
+      <p>Gana puntos y desbloquea logros explorando</p>
+    </div>
+
+    <!-- PUNTOS ACTUALES -->
+    <div class="points-box">
+      <h2>Tus puntos</h2>
+      <p class="points">180 pts</p>
+    </div>
+
+    <!-- INSIGNIAS -->
+    <div class="section">
+      <h2>🏅 Insignias</h2>
+
+      <div class="badge unlocked">
+        <span>🌿</span>
+        <div>
+          <h3>Explorador Novato</h3>
+          <p>Alcanza 100 puntos</p>
+        </div>
+      </div>
+
+      <div class="badge locked">
+        <span>🔥</span>
+        <div>
+          <h3>Rastreador Cultural</h3>
+          <p>Alcanza 300 puntos</p>
+        </div>
+      </div>
+
+      <div class="badge locked">
+        <span>👑</span>
+        <div>
+          <h3>Maestro Explorador</h3>
+          <p>Alcanza 600 puntos</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROGRESO -->
+    <div class="section">
+      <h2>📊 Progreso</h2>
+
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: 60%"></div>
+      </div>
+
+      <p class="progress-text">Te faltan 120 pts para la siguiente insignia</p>
+    </div>
+
   </div>
+
 </ion-content>

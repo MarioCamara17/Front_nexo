@@ -1,14 +1,112 @@
-#tren-container {
-    text-align: center;
-  
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-  }
-  
-  #tren-container strong {
-    font-size: 20px;
-    line-height: 26px;
-  }
+ion-content {
+  --background: #f5f7fa;
+}
+
+/* CONTENEDOR GENERAL */
+.rewards-container {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 20px;
+}
+
+/* HEADER */
+.header h1 {
+  font-size: 1.6rem;
+  font-weight: bold;
+  margin: 0;
+  color: #1e1e1e;
+}
+
+.header p {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+/* TARJETA DE PUNTOS */
+.points-box {
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  color: white;
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+}
+
+.points-box h2 {
+  margin: 0;
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.points-box .points {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-top: 5px;
+}
+
+/* SECCIONES */
+.section h2 {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  color: #1e1e1e;
+}
+
+/* INSIGNIAS */
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+}
+
+.badge span {
+  font-size: 1.8rem;
+}
+
+.badge h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.badge p {
+  margin: 0;
+  font-size: 0.75rem;
+}
+
+/* INSIGNIA DESBLOQUEADA */
+.badge.unlocked {
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+/* INSIGNIA BLOQUEADA */
+.badge.locked {
+  background: #e5e7eb;
+  color: #6b7280;
+  opacity: 0.6;
+}
+
+/* BARRA DE PROGRESO */
+.progress-bar {
+  width: 100%;
+  height: 10px;
+  background: #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0ea5e9, #22c55e);
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 5px;
+}
