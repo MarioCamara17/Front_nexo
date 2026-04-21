@@ -1,43 +1,73 @@
 <ion-content>
-
-  <!-- REFRESH -->
   <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
     <ion-refresher-content></ion-refresher-content>
   </ion-refresher>
 
   <div class="home-container">
-
-    <!-- HEADER / BIENVENIDA -->
     <div class="welcome-section">
-      <h1>Descubre Tabasco 🌿</h1>
-        <p>Explora su cultura, naturaleza y patrimonio</p>
+      <div class="welcome-text">
+        <span class="eyebrow">Turismo digital en Tabasco</span>
+        <h1>Descubre Tabasco 🌿</h1>
+        <p>Explora su cultura, naturaleza y patrimonio desde una experiencia interactiva.</p>
+      </div>
     </div>
 
-    <!-- TARJETA DE PUNTOS -->
     <div class="points-card">
-      <h2>⭐ Tus puntos</h2>
-      <p class="points">180 pts</p>
-      <small>Te faltan 20 pts para tu próxima insignia</small>
-    </div>
-
-    <!-- RUTAS DESTACADAS -->
-    <div class="section">
-      <h2>🗺️ Rutas recomendadas</h2>
-
-      <div class="route-card">
-        <h3>Ruta Cultural</h3>
-        <p>4 lugares • 200 pts</p>
+      <div class="points-top">
+        <div>
+          <h2>⭐ Tus puntos</h2>
+          <p class="points">180 pts</p>
+        </div>
+        <div class="badge-pill">Nivel explorador</div>
       </div>
 
-      <div class="route-card">
-        <h3>Ruta Natural</h3>
-        <p>3 lugares • 150 pts</p>
+      <div class="progress-block">
+        <div class="progress-label">
+          <span>Progreso hacia tu próxima insignia</span>
+          <span>20 pts restantes</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill"></div>
+        </div>
+      </div>
+
+      <small>Sigue explorando lugares para desbloquear nuevas recompensas.</small>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <h2>🗺️ Rutas recomendadas</h2>
+        <span class="section-note">Experiencias sugeridas</span>
+      </div>
+
+      <div class="routes-grid">
+        <div class="route-card cultural">
+          <div class="route-badge">Cultural</div>
+          <h3>Ruta Patrimonial de Villahermosa</h3>
+          <p>Descubre espacios emblemáticos, historia regional y patrimonio tabasqueño.</p>
+          <div class="route-meta">
+            <span>4 lugares</span>
+            <span>200 pts</span>
+          </div>
+        </div>
+
+        <div class="route-card natural">
+          <div class="route-badge">Naturaleza</div>
+          <h3>Ruta Natural de Tabasco</h3>
+          <p>Explora reservas, paisajes y sitios de conexión con la riqueza natural del estado.</p>
+          <div class="route-meta">
+            <span>3 lugares</span>
+            <span>150 pts</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- PUNTOS DE INTERÉS -->
     <div class="section">
-      <h2>📍 Lugares para explorar</h2>
+      <div class="section-header">
+        <h2>📍 Lugares para explorar</h2>
+        <span class="section-note">{{ poiList.length }} sitios disponibles</span>
+      </div>
 
       <div class="poi-grid">
         <app-poi-card
@@ -51,7 +81,5 @@
         ></app-poi-card>
       </div>
     </div>
-
   </div>
-
 </ion-content>

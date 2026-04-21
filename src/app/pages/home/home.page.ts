@@ -100,31 +100,28 @@ export class HomePage implements OnInit, OnDestroy {
     });
   }
 
-  async openModal(poi: Poi){
-    try {
-      const modal = await this.modalCtrl.create({
-        component: PoiModalComponent,
-        componentProps: {
-          id: poi.id,
-          title: poi.name,
-          info: poi.description,
-          image: poi.image,
-          video: poi.video
-        },
-        cssClass: 'poi-modal',
-        initialBreakpoint: 0.75,
-        breakpoints: [0, 0.75],
-        handleBehavior: 'cycle',
-      });
+ async openModal(poi: Poi) {
+  try {
+    const modal = await this.modalCtrl.create({
+      component: PoiModalComponent,
+      componentProps: {
+        id: poi.id,
+        title: poi.name,
+        info: poi.description,
+        image: poi.image,
+        video: poi.video
+      },
+      cssClass: 'poi-modal'
+    });
 
-      await modal.present();
-      const { data } = await modal.onDidDismiss();
-      
-      if (data && data.refresh) {
-        this.loadPois();
-      }
-    } catch (error) {
-      console.error('Error al abrir el modal:', error);
+    await modal.present();
+
+    const { data } = await modal.onDidDismiss();
+    if (data && data.refresh) {
+      this.loadPois();
     }
+  } catch (error) {
+    console.error('Error al abrir el modal:', error);
+  }
   }
 }

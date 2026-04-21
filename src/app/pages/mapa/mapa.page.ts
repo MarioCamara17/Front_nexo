@@ -16,15 +16,10 @@ import { PoiModalComponent } from 'src/app/components/poi-modal/poi-modal.compon
   imports: [IonContent, CommonModule, FormsModule, LeafletMapComponent]
 })
 export class MapaPage implements OnInit {
-
-  // 🔥 TODOS LOS POIS
   pois: Poi[] = [];
-
-  // 🔥 POI SELECCIONADO (para tarjeta inferior)
+  filteredPois: Poi[] = [];
   selectedPoi: Poi | null = null;
-
-  // 🔥 FILTRO ACTUAL
-  currentFilter: string = 'Todos';
+  currentFilter = 'Todos';
 
   constructor(
     private poiService: PoiService,
@@ -33,18 +28,15 @@ export class MapaPage implements OnInit {
 
   ngOnInit() {}
 
-  // 🔄 Se ejecuta cada vez que entras a la página
   ionViewWillEnter() {
-    console.log('MapaPage: Cargando POIs...');
     this.cargarPois();
   }
 
-  // 🔥 Cargar POIs
   cargarPois() {
     this.poiService.getAll().subscribe({
       next: (pois) => {
-        console.log('POIs cargados:', pois);
         this.pois = pois;
+        this.aplicarFiltro(this.currentFilter);
       },
       error: (err) => {
         console.error('Error cargando POIs:', err);
@@ -52,44 +44,47 @@ export class MapaPage implements OnInit {
     });
   }
 
-  // 🧠 Selección desde el mapa
   abrirPoiModal(poi: Poi) {
-    // 👉 ahora mostramos preview en lugar de abrir directo
+    console.log('POI recibido en MapaPage:', poi.name);
     this.selectedPoi = poi;
   }
 
-  // 🔥 Abrir modal manualmente (botón futuro)
-  async abrirDetalleCompleto(poi: Poi) {
-    const modal = await this.modalCtrl.create({
-      component: PoiModalComponent,
-      componentProps: {
-        id: poi.id,
-        title: poi.name,
-        info: poi.description,
-        image: poi.image,
-        video: poi.video,
-        isRouteContext: false
-      },
-      cssClass: 'poi-modal',
-      initialBreakpoint: 0.75,
-      breakpoints: [0, 0.75],
-      handleBehavior: 'cycle',
-    });
-
-    await modal.present();
-    await modal.onDidDismiss();
+  async abrirDetalleCompleto(poi: Poi, event?: Event) {
+  if (event) {
+    (event.target as HTMLElement)?.blur();
   }
 
-  // 🎯 FILTROS (para Tabasco)
+  const modal = await this.modalCtrl.create({
+    component: PoiModalComponent,
+    componentProps: {
+      id: poi.id,
+      title: poi.name,
+      info: poi.description,
+      image: poi.image,
+      video: poi.video,
+      isRouteContext: false
+    },
+    cssClass: 'poi-modal'
+  });
+
+  await modal.present();
+  await modal.onDidDismiss();
+}
+
   aplicarFiltro(tipo: string) {
     this.currentFilter = tipo;
 
-    // ⚠️ por ahora solo visual
-    // luego aquí filtraremos según categoría real
-    console.log('Filtro aplicado:', tipo);
+    if (tipo === 'Todos') {
+      this.filteredPois = [...this.pois];
+    } else {
+      this.filteredPois = this.pois.filter(
+        (poi) => poi.category.name.toLowerCase() === tipo.toLowerCase()
+      );
+    }
+
+    this.selectedPoi = null;
   }
 
-  // ❌ cerrar preview
   cerrarPreview() {
     this.selectedPoi = null;
   }

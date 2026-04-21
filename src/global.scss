@@ -40,34 +40,40 @@
 
 
 ion-modal {
-    --border-radius: 2.5vh;
+  --border-radius: 20px;
 }
 
-/* Estilos específicos para el modal de POI */
-.poi-modal {
-  --height: auto;
-  --width: 90%;
-  --border-radius: 16px;
-  --box-shadow: 0 10px 15px rgba(0, 0, 0, 0.4);
+ion-modal.poi-modal {
+  --width: min(92vw, 700px);
+  --height: 80vh;
+  --max-height: 80vh;
+  --border-radius: 20px;
+  --box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
 }
 
-.poi-modal ion-content {
+ion-modal.poi-modal::part(content) {
+  border-radius: 20px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+ion-modal.poi-modal ion-content {
+  --background: #ffffff;
   --padding-top: 0;
   --padding-bottom: 16px;
   --padding-start: 0;
   --padding-end: 0;
 }
 
-/* Asegurar que los botones en el modal sean clickeables */
-.poi-modal button {
+ion-modal.poi-modal button {
   cursor: pointer;
   touch-action: manipulation;
 }
 
-/* Mejorar la visualización en dispositivos móviles */
 @media (max-width: 576px) {
-  .poi-modal {
-    --width: 100%;
-    --height: 80%;
+  ion-modal.poi-modal {
+    --width: 95vw;
+    --height: 85vh;
+    --max-height: 85vh;
   }
 }

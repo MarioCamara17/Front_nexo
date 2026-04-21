@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, Input, OnChanges, SimpleChanges, Output, EventEmitter, NgZone } from '@angular/core';
 import * as L from 'leaflet';
 import { Poi } from 'src/app/models/poi.model';
 import { CommonModule } from '@angular/common';
@@ -18,17 +18,19 @@ export class LeafletMapComponent implements OnInit, OnChanges {
 
   map: L.Map | undefined;
   private markers: L.Marker[] = [];
-  mapInitialized: boolean = false;
+  mapInitialized = false;
 
-  constructor() {}
+  constructor(private ngZone: NgZone) {}
 
   ngOnInit() {
     setTimeout(() => {
-      this.map = L.map('mapId').setView([17.8409, -92.6189], 8);
+      this.map = L.map('mapId', {
+        zoomControl: true
+      }).setView([17.8409, -92.6189], 8);
 
       L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(this.map);
+      }).addTo(this.map!);
 
       this.mapInitialized = true;
 
@@ -43,33 +45,17 @@ export class LeafletMapComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['pois']) {
-      if (this.mapInitialized && this.map) {
-        this.clearMarkers();
-        this.addMarkers();
-      }
+    if (changes['pois'] && this.mapInitialized && this.map) {
+      this.clearMarkers();
+      this.addMarkers();
     }
   }
 
-  private getCategoryName(poi: Poi): string {
-    return poi.category?.name?.toLowerCase?.() || '';
-  }
-
-  private getIconByCategory(poi: Poi): L.Icon {
-    const category = this.getCategoryName(poi);
-
-    let iconUrl = 'assets/icon/poi_icon.svg';
-
-    if (category.includes('naturaleza')) {
-      iconUrl = 'assets/icon/nature.svg';
-    } else if (category.includes('historia')) {
-      iconUrl = 'assets/icon/history.svg';
-    } else if (category.includes('cultura')) {
-      iconUrl = 'assets/icon/culture.svg';
-    }
-
+  private getIconByCategory(_poi: Poi): L.Icon {
     return L.icon({
-      iconUrl,
+      iconUrl: 'assets/icon/poi_icon.svg',
+      iconRetinaUrl: 'assets/icon/poi_icon.svg',
+      shadowUrl: '',
       iconSize: [36, 36],
       iconAnchor: [18, 36],
       popupAnchor: [0, -30]
@@ -79,25 +65,24 @@ export class LeafletMapComponent implements OnInit, OnChanges {
   private addMarkers() {
     if (!this.map) return;
 
-    this.pois.forEach(poi => {
+    this.pois.forEach((poi) => {
       const lat = parseFloat(poi.latitude);
       const lng = parseFloat(poi.longitude);
 
-      if (isNaN(lat) || isNaN(lng)) return;
+      if (isNaN(lat) || isNaN(lng)) {
+        console.warn('POI con coordenadas inválidas:', poi.name, poi.latitude, poi.longitude);
+        return;
+      }
 
       const marker = L.marker([lat, lng], {
         icon: this.getIconByCategory(poi)
       }).addTo(this.map!);
 
-      marker.on('click', () => {
-        this.poiClicked.emit(poi);
-      });
-
       marker.bindTooltip(
         `
         <div style="text-align:center;">
           <strong>${poi.name}</strong><br>
-          <small>${poi.category?.name || 'Turismo'}</small><br>
+          <small>${poi.category.name || 'Turismo'}</small><br>
           ⭐ +50 pts
         </div>
         `,
@@ -106,6 +91,20 @@ export class LeafletMapComponent implements OnInit, OnChanges {
           offset: [0, -20]
         }
       );
+
+      marker.on('click', () => {
+        console.log('Pin clickeado:', poi.name);
+        this.ngZone.run(() => {
+          this.poiClicked.emit(poi);
+        });
+      });
+
+      marker.on('touchend', () => {
+        console.log('Pin tocado:', poi.name);
+        this.ngZone.run(() => {
+          this.poiClicked.emit(poi);
+        });
+      });
 
       this.markers.push(marker);
     });
@@ -118,7 +117,8 @@ export class LeafletMapComponent implements OnInit, OnChanges {
 
   private clearMarkers() {
     if (!this.map) return;
-    this.markers.forEach(marker => this.map!.removeLayer(marker));
+
+    this.markers.forEach((marker) => this.map?.removeLayer(marker));
     this.markers = [];
   }
 }

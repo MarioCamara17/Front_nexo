@@ -1,41 +1,80 @@
 <ion-content [fullscreen]="true">
+  <div class="page-wrapper">
+    <div class="map-header">
+      <h1>🗺️ Explora Tabasco</h1>
+      <p>Descubre lugares, rutas y experiencias</p>
+    </div>
 
-  <!-- HEADER SUPERIOR -->
-  <div class="map-header">
-    <h1>🗺️ Explora</h1>
-    <p>Descubre lugares y gana puntos</p>
-  </div>
+    <div class="map-filters">
+      <button
+        class="filter"
+        [class.active]="currentFilter === 'Todos'"
+        (click)="aplicarFiltro('Todos')"
+      >
+        Todos
+      </button>
 
-  <!-- FILTROS -->
-  <div class="map-filters">
-    <button class="filter active">Todos</button>
-    <button class="filter">Cultura</button>
-    <button class="filter">Naturaleza</button>
-    <button class="filter">Historia</button>
-    <button class="filter">Aventura</button>
-  </div>
+      <button
+        class="filter"
+        [class.active]="currentFilter === 'Cultura'"
+        (click)="aplicarFiltro('Cultura')"
+      >
+        Cultura
+      </button>
 
-  <!-- MAPA -->
-  <div class="map-container">
-    <app-leaflet-map
-      [pois]="pois"
-      (poiClicked)="abrirPoiModal($event)">
-    </app-leaflet-map>
-  </div>
+      <button
+        class="filter"
+        [class.active]="currentFilter === 'Naturaleza'"
+        (click)="aplicarFiltro('Naturaleza')"
+      >
+        Naturaleza
+      </button>
 
-  <!-- TARJETA INFERIOR (POI SELECCIONADO) -->
-  <div class="poi-preview" *ngIf="selectedPoi">
-    <img [src]="selectedPoi.image" alt="">
+      <button
+        class="filter"
+        [class.active]="currentFilter === 'Historia'"
+        (click)="aplicarFiltro('Historia')"
+      >
+        Historia
+      </button>
 
-    <div class="info">
-      <h3>{{ selectedPoi.name }}</h3>
-      <p>{{ selectedPoi.description }}</p>
+      <button
+        class="filter"
+        [class.active]="currentFilter === 'Aventura'"
+        (click)="aplicarFiltro('Aventura')"
+      >
+        Aventura
+      </button>
+    </div>
 
-      <div class="meta">
-        <span>⭐ 50 pts</span>
-        <span>📍 Turismo</span>
+    <div class="map-container">
+      <app-leaflet-map
+        [pois]="filteredPois"
+        (poiClicked)="abrirPoiModal($event)">
+      </app-leaflet-map>
+    </div>
+
+    <div class="poi-preview" *ngIf="selectedPoi">
+      <img [src]="selectedPoi.image" [alt]="selectedPoi.name">
+
+      <div class="info">
+        <h3>{{ selectedPoi.name }}</h3>
+        <p>{{ selectedPoi.description }}</p>
+
+        <div class="meta">
+          <span>⭐ 50 pts</span>
+          <span>📍 {{ selectedPoi.category.name || 'Turismo' }}</span>
+        </div>
+
+        <div class="preview-actions">
+          <button class="preview-btn secondary" (click)="cerrarPreview()">
+            Cerrar
+          </button>
+          <button class="preview-btn primary" (click)="abrirDetalleCompleto(selectedPoi, $event)">
+            Ver más
+          </button>
+        </div>
       </div>
     </div>
   </div>
-
 </ion-content>

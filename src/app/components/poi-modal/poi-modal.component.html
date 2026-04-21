@@ -4,33 +4,32 @@
 
     <div class="buttons-container">
       <button class="audio-button" (click)="toggleSpeech()">
-        <mat-icon [class.speaking] = "isSpeaking">volume_up</mat-icon>
+        <mat-icon [class.speaking]="isSpeaking">volume_up</mat-icon>
       </button>
 
-      <button 
-        class="favorites-button" 
-        *ngIf="id && !isRouteContext" 
+      <button
+        class="favorites-button"
+        *ngIf="id && !isRouteContext"
         (click)="toggleFavorite()"
         [disabled]="isProcessingFavorite"
         [class.processing]="isProcessingFavorite"
       >
         <mat-icon [ngClass]="{ favorite: isFav, 'no-favorite': !isFav }">favorite</mat-icon>
       </button>
-      
-      <button 
-        class="visited-button" 
-        *ngIf="id && !isRouteContext" 
+
+      <button
+        class="visited-button"
+        *ngIf="id && !isRouteContext"
         (click)="onVisitedClick($event)"
         [disabled]="isProcessingVisit"
         [class.processing]="isProcessingVisit"
       >
         <mat-icon [ngClass]="{ visited: isVisited, 'not-visited': !isVisited }">
-          {{ isVisited ? "hourglass_bottom" : "hourglass_top" }}
+          {{ isVisited ? 'hourglass_bottom' : 'hourglass_top' }}
         </mat-icon>
       </button>
-      
-      <!-- Botón de cierre solo en modo popup -->
-      <button *ngIf="displayMode === 'popup'" class="modal-close" (click)="dismiss()">
+
+      <button class="modal-close" (click)="dismiss()">
         <mat-icon>close</mat-icon>
       </button>
     </div>
@@ -41,18 +40,21 @@
       <p>{{ route.description }}</p>
       <p class="route-duration">Duración: {{ route.duration }}</p>
     </div>
+
     <p *ngIf="!isRouteContext">{{ info }}</p>
   </div>
 
-  <hr>
+  <hr />
 
   <div *ngIf="isRouteContext && route && pois" class="pois-container">
     <h3>Puntos de Interés</h3>
+
     <div class="poi-list">
       <div *ngFor="let poi of pois" class="poi-item">
         <div class="poi-image" *ngIf="poi.image">
-          <img [src]="poi.image" [alt]="poi.name"/>
+          <img [src]="poi.image" [alt]="poi.name" />
         </div>
+
         <div class="poi-info">
           <h4>{{ poi.name }}</h4>
           <p>{{ poi.description }}</p>
@@ -62,18 +64,18 @@
   </div>
 
   <div class="image-container" *ngIf="!isRouteContext && image">
-    <img [src]="image" alt="Imagen"/>
+    <img [src]="image" alt="Imagen" />
 
     <button class="play-button" *ngIf="!showVideo && video" (click)="showVideo = true">
       <mat-icon>play_arrow</mat-icon>
     </button>
 
-    <video *ngIf="showVideo && video"
-           [src]="video"
-           class="video-player"
-           autoplay
-           (ended)="onVideoEnded()">
-    </video>
+    <video
+      *ngIf="showVideo && video"
+      [src]="video"
+      class="video-player"
+      autoplay
+      (ended)="onVideoEnded()"
+    ></video>
   </div>
-
 </ion-content>
