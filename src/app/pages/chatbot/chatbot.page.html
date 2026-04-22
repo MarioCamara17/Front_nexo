@@ -24,9 +24,10 @@
   <ion-toolbar>
     <div class="input-container">
       <ion-input
-        [(ngModel)]="newMessage"
-        placeholder="Escribe tu mensaje"
-        class="chat-input"
+      [(ngModel)]="newMessage"
+      placeholder="Escribe tu mensaje"
+      class="chat-input"
+      (keyup.enter)="sendMessage()"
       ></ion-input>
 
       <ion-button (click)="sendMessage()" [disabled]="loading">
