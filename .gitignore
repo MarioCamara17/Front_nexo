@@ -68,3 +68,27 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# 🔐 VARIABLES DE ENTORNO (MUY IMPORTANTE)
+.env
+.env.*
+
+# 🐍 ENTORNO VIRTUAL PYTHON
+.venv/
+venv/
+
+# 🐍 ARCHIVOS PYTHON
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 🗄 BASE DE DATOS LOCAL
+db.sqlite3
+
+# 📁 MEDIA (IMÁGENES SUBIDAS)
+media/
+
+# 📦 MIGRACIONES (opcional si trabajan en equipo)
+# */migrations/
+# !*/migrations/__init__.py

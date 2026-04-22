@@ -1,4 +1,4 @@
-<ion-content>
+<ion-content [fullscreen]="true" scrollY="true">
   <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
     <ion-refresher-content></ion-refresher-content>
   </ion-refresher>
@@ -82,4 +82,10 @@
       </div>
     </div>
   </div>
+
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button color="primary" routerLink="/tabs/chatbot">
+      🤖
+    </ion-fab-button>
+  </ion-fab>
 </ion-content>

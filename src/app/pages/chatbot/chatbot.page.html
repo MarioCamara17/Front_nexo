@@ -1,0 +1,37 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Chatbot NEXO</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="chat-content">
+  <div class="messages-container">
+    <div
+      *ngFor="let message of messages"
+      [ngClass]="message.role === 'user' ? 'user-message' : 'bot-message'"
+      class="message-bubble"
+    >
+      {{ message.text }}
+    </div>
+
+    <div *ngIf="loading" class="bot-message message-bubble">
+      Escribiendo...
+    </div>
+  </div>
+</ion-content>
+
+<ion-footer>
+  <ion-toolbar>
+    <div class="input-container">
+      <ion-input
+        [(ngModel)]="newMessage"
+        placeholder="Escribe tu mensaje"
+        class="chat-input"
+      ></ion-input>
+
+      <ion-button (click)="sendMessage()" [disabled]="loading">
+        Enviar
+      </ion-button>
+    </div>
+  </ion-toolbar>
+</ion-footer>

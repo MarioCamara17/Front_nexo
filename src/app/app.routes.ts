@@ -40,6 +40,10 @@ export const routes: Routes = [
       {
         path: 'train',
         loadComponent: () => import('./pages/tren-maya/tren-maya.page').then((m) => m.TrenMayaPage),
+      },
+      {
+        path: 'chatbot',
+        loadComponent: () => import('./pages/chatbot/chatbot.page').then((m) => m.ChatbotPage),
       }
     ]
   },

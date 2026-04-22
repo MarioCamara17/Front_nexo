@@ -1,15 +1,23 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ModalController, IonContent, IonRefresher, IonRefresherContent } from '@ionic/angular/standalone';
+import {
+  ModalController,
+  IonContent,
+  IonRefresher,
+  IonRefresherContent,
+  IonButton,
+  IonFab,
+  IonFabButton
+} from '@ionic/angular/standalone';
+import { RouterLink } from '@angular/router';
 import { PoiCardComponent } from '../../components/poi-card/poi-card.component';
 import { PoiService } from 'src/app/services/poi/poi.service';
 import { FavoritesService } from 'src/app/services/favorites/favorites.service';
 import { AuthService } from 'src/app/services/auth/auth.service';
 import { Poi } from 'src/app/models/poi.model';
 import { Subscription } from 'rxjs';
-import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 
-// 👇 IMPORT SOLO PARA USO EN MODAL (NO EN imports del componente)
+// 👇 IMPORT SOLO PARA USO EN MODAL
 import { PoiModalComponent } from 'src/app/components/poi-modal/poi-modal.component';
 
 @Component({
@@ -18,16 +26,20 @@ import { PoiModalComponent } from 'src/app/components/poi-modal/poi-modal.compon
   styleUrls: ['home.page.scss'],
   standalone: true,
   imports: [
-    IonContent, 
-    IonRefresher, 
-    IonRefresherContent, 
-    CommonModule, 
+    IonContent,
+    IonRefresher,
+    IonRefresherContent,
+    IonButton,
+    IonFab,
+    IonFabButton,
+    RouterLink,
+    CommonModule,
     PoiCardComponent
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class HomePage implements OnInit, OnDestroy {
-  
+
   poiList: Poi[] = [];
   isLoading = false;
   private subscriptions: Subscription[] = [];
@@ -41,7 +53,7 @@ export class HomePage implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.loadPois();
-    
+
     this.subscriptions.push(
       this.authService.isAuthenticated$.subscribe(isAuthenticated => {
         if (isAuthenticated) {
@@ -50,23 +62,23 @@ export class HomePage implements OnInit, OnDestroy {
         }
       })
     );
-    
+
     this.subscriptions.push(
       this.favoritesService.getFavorites().subscribe(() => {
         console.log('Lista de favoritos actualizada');
       })
     );
   }
-  
+
   ionViewWillEnter() {
     console.log('Home page will enter, checking authentication status');
-    
+
     if (this.authService.isLoggedIn()) {
       this.favoritesService.refresh();
       this.loadPois();
     }
   }
-  
+
   ngOnDestroy() {
     this.subscriptions.forEach(sub => sub.unsubscribe());
   }
@@ -84,10 +96,10 @@ export class HomePage implements OnInit, OnDestroy {
       }
     });
   }
-  
+
   doRefresh(event: any) {
     this.favoritesService.refresh();
-    
+
     this.poiService.getAll().subscribe({
       next: pois => {
         this.poiList = pois;
@@ -100,28 +112,28 @@ export class HomePage implements OnInit, OnDestroy {
     });
   }
 
- async openModal(poi: Poi) {
-  try {
-    const modal = await this.modalCtrl.create({
-      component: PoiModalComponent,
-      componentProps: {
-        id: poi.id,
-        title: poi.name,
-        info: poi.description,
-        image: poi.image,
-        video: poi.video
-      },
-      cssClass: 'poi-modal'
-    });
+  async openModal(poi: Poi) {
+    try {
+      const modal = await this.modalCtrl.create({
+        component: PoiModalComponent,
+        componentProps: {
+          id: poi.id,
+          title: poi.name,
+          info: poi.description,
+          image: poi.image,
+          video: poi.video
+        },
+        cssClass: 'poi-modal'
+      });
 
-    await modal.present();
+      await modal.present();
 
-    const { data } = await modal.onDidDismiss();
-    if (data && data.refresh) {
-      this.loadPois();
+      const { data } = await modal.onDidDismiss();
+      if (data && data.refresh) {
+        this.loadPois();
+      }
+    } catch (error) {
+      console.error('Error al abrir el modal:', error);
     }
-  } catch (error) {
-    console.error('Error al abrir el modal:', error);
-  }
   }
 }
