@@ -1,4 +1,13 @@
-import { Component, OnInit, Input, OnChanges, SimpleChanges, Output, EventEmitter, NgZone } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  Input,
+  OnChanges,
+  SimpleChanges,
+  Output,
+  EventEmitter,
+  NgZone
+} from '@angular/core';
 import * as L from 'leaflet';
 import { Poi } from 'src/app/models/poi.model';
 import { CommonModule } from '@angular/common';
@@ -14,10 +23,15 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 })
 export class LeafletMapComponent implements OnInit, OnChanges {
   @Input() pois: Poi[] = [];
+  @Input() userLocation: { lat: number; lng: number } | null = null;
+
   @Output() poiClicked = new EventEmitter<Poi>();
 
   map: L.Map | undefined;
   private markers: L.Marker[] = [];
+  private userLocationMarker: L.CircleMarker | null = null;
+  private userLocationCircle: L.Circle | null = null;
+
   mapInitialized = false;
 
   constructor(private ngZone: NgZone) {}
@@ -38,6 +52,10 @@ export class LeafletMapComponent implements OnInit, OnChanges {
         this.addMarkers();
       }
 
+      if (this.userLocation) {
+        this.updateUserLocationMarker();
+      }
+
       setTimeout(() => {
         this.map?.invalidateSize();
       }, 400);
@@ -48,6 +66,10 @@ export class LeafletMapComponent implements OnInit, OnChanges {
     if (changes['pois'] && this.mapInitialized && this.map) {
       this.clearMarkers();
       this.addMarkers();
+    }
+
+    if (changes['userLocation'] && this.mapInitialized && this.map) {
+      this.updateUserLocationMarker();
     }
   }
 
@@ -109,10 +131,53 @@ export class LeafletMapComponent implements OnInit, OnChanges {
       this.markers.push(marker);
     });
 
-    if (this.markers.length > 0) {
+    if (this.markers.length > 0 && !this.userLocation) {
       const group = L.featureGroup(this.markers);
       this.map.fitBounds(group.getBounds(), { padding: [30, 30] });
     }
+  }
+
+  private updateUserLocationMarker() {
+    if (!this.map || !this.userLocation) return;
+
+    const { lat, lng } = this.userLocation;
+
+    if (this.userLocationMarker) {
+      this.map.removeLayer(this.userLocationMarker);
+    }
+
+    if (this.userLocationCircle) {
+      this.map.removeLayer(this.userLocationCircle);
+    }
+
+    this.userLocationCircle = L.circle([lat, lng], {
+      radius: 60,
+      color: '#2563eb',
+      fillColor: '#60a5fa',
+      fillOpacity: 0.15,
+      weight: 1
+    }).addTo(this.map);
+
+    this.userLocationMarker = L.circleMarker([lat, lng], {
+      radius: 8,
+      color: '#ffffff',
+      weight: 3,
+      fillColor: '#2563eb',
+      fillOpacity: 1
+    }).addTo(this.map);
+
+    this.userLocationMarker.bindTooltip('Tu ubicación actual', {
+      direction: 'top',
+      offset: [0, -10]
+    });
+  }
+
+  centrarEnUbicacionActual() {
+    if (!this.map || !this.userLocation) return;
+
+    this.map.setView([this.userLocation.lat, this.userLocation.lng], 14, {
+      animate: true
+    });
   }
 
   private clearMarkers() {

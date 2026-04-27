@@ -1,22 +1,54 @@
-<div class="user-info">
-  <div class="user-avatar">
-    <ion-avatar>
-      <img [src]="user.avatar || '../../../assets/icon/default-avatar.svg'" />
-    </ion-avatar>
-    <h2>{{ user.first_name }} {{ user.last_name }}</h2>
+<div class="profile-page">
+  <div class="user-info">
+    <div class="user-avatar">
+      <ion-avatar>
+        <img [src]="user.avatar || '../../../assets/icon/default-avatar.svg'" />
+      </ion-avatar>
+      <h2>{{ user.first_name }} {{ user.last_name }}</h2>
+      <p class="user-subtitle">Explorador de Tabasco</p>
+    </div>
+
+    <div class="score-card">
+      <div class="score-header">
+        <h3>⭐ Puntaje</h3>
+        <span class="level-badge">Nivel explorador</span>
+      </div>
+
+      <p class="score-points">{{ userPoints }} pts</p>
+
+      <div class="progress-label">
+        <span>Progreso a la siguiente insignia</span>
+        <span>{{ nextBadgePoints - userPoints }} pts restantes</span>
+      </div>
+
+      <div class="progress-bar">
+        <div class="progress-fill" [style.width.%]="progressPercent"></div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <strong>{{ visitedPlaces }}</strong>
+          <span>Lugares visitados</span>
+        </div>
+        <div class="stat-box">
+          <strong>{{ completedRoutes }}</strong>
+          <span>Rutas completadas</span>
+        </div>
+      </div>
+    </div>
+
+    <h3>Sobre mí</h3>
+    <div class="description">
+      <p *ngIf="user.description; else noDescription">{{ user.description }}</p>
+
+      <ng-template #noDescription>
+        <p class="default-text">Escribe un poco sobre ti...</p>
+      </ng-template>
+    </div>
   </div>
 
-  <h3>Sobre Mi</h3>
-  <div class="description">
-    <p *ngIf="user.description; else noDescription">{{ user.description }}</p>
-
-    <ng-template #noDescription>
-      <p class="default-text">Escribe un poco sobre ti...</p>
-    </ng-template>
+  <div class="button-container">
+    <ion-button [routerLink]="['/edit-user']" type="button">Editar información</ion-button>
+    <ion-button color="danger" (click)="logout()" type="button">Cerrar sesión</ion-button>
   </div>
-</div>
-
-<div class="button-container">
-  <ion-button [routerLink]="['/edit-user']" type="button">Editar Información</ion-button>
-  <ion-button color="danger" (click)="logout()" type="button">Cerrar Sesión</ion-button>
 </div>

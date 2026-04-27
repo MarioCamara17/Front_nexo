@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonContent, ModalController } from '@ionic/angular/standalone';
@@ -15,11 +15,19 @@ import { PoiModalComponent } from 'src/app/components/poi-modal/poi-modal.compon
   standalone: true,
   imports: [IonContent, CommonModule, FormsModule, LeafletMapComponent]
 })
-export class MapaPage implements OnInit {
+export class MapaPage implements OnInit, OnDestroy {
   pois: Poi[] = [];
   filteredPois: Poi[] = [];
   selectedPoi: Poi | null = null;
   currentFilter = 'Todos';
+
+  userLocation: { lat: number; lng: number } | null = null;
+  locationError = '';
+  private watchId: number | null = null;
+
+  // Ruta personalizada
+  isCreatingRoute = false;
+  customRoute: Poi[] = [];
 
   constructor(
     private poiService: PoiService,
@@ -30,6 +38,15 @@ export class MapaPage implements OnInit {
 
   ionViewWillEnter() {
     this.cargarPois();
+    this.iniciarSeguimientoUbicacion();
+  }
+
+  ngOnDestroy() {
+    this.detenerSeguimientoUbicacion();
+  }
+
+  ionViewDidLeave() {
+    this.detenerSeguimientoUbicacion();
   }
 
   cargarPois() {
@@ -44,32 +61,108 @@ export class MapaPage implements OnInit {
     });
   }
 
+  iniciarSeguimientoUbicacion() {
+    if (!navigator.geolocation) {
+      this.locationError = 'Tu navegador no soporta geolocalización.';
+      return;
+    }
+
+    this.watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        this.userLocation = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        this.locationError = '';
+        console.log('Ubicación actual:', this.userLocation);
+      },
+      (error) => {
+        console.error('Error de geolocalización:', error);
+        this.locationError = 'No se pudo obtener tu ubicación actual.';
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+        timeout: 10000
+      }
+    );
+  }
+
+  detenerSeguimientoUbicacion() {
+    if (this.watchId !== null) {
+      navigator.geolocation.clearWatch(this.watchId);
+      this.watchId = null;
+    }
+  }
+
   abrirPoiModal(poi: Poi) {
+    if (this.isCreatingRoute) {
+      this.agregarPoiARuta(poi);
+      return;
+    }
+
     console.log('POI recibido en MapaPage:', poi.name);
     this.selectedPoi = poi;
   }
 
-  async abrirDetalleCompleto(poi: Poi, event?: Event) {
-  if (event) {
-    (event.target as HTMLElement)?.blur();
+  agregarPoiARuta(poi: Poi) {
+    const yaExiste = this.customRoute.some(item => item.id === poi.id);
+
+    if (yaExiste) {
+      return;
+    }
+
+    this.customRoute.push(poi);
+    this.selectedPoi = null;
+    console.log('POI agregado a ruta personalizada:', poi.name);
   }
 
-  const modal = await this.modalCtrl.create({
-    component: PoiModalComponent,
-    componentProps: {
-      id: poi.id,
-      title: poi.name,
-      info: poi.description,
-      image: poi.image,
-      video: poi.video,
-      isRouteContext: false
-    },
-    cssClass: 'poi-modal'
-  });
+  toggleRouteCreation() {
+    this.isCreatingRoute = !this.isCreatingRoute;
 
-  await modal.present();
-  await modal.onDidDismiss();
-}
+    if (this.isCreatingRoute) {
+      this.selectedPoi = null;
+    }
+  }
+
+  limpiarRutaPersonalizada() {
+    this.customRoute = [];
+  }
+
+  eliminarDeRuta(poiId: string) {
+    this.customRoute = this.customRoute.filter(poi => poi.id !== poiId);
+  }
+
+  finalizarRuta() {
+    if (this.customRoute.length === 0) {
+      return;
+    }
+
+    console.log('Ruta personalizada creada:', this.customRoute);
+    this.isCreatingRoute = false;
+  }
+
+  async abrirDetalleCompleto(poi: Poi, event?: Event) {
+    if (event) {
+      (event.target as HTMLElement)?.blur();
+    }
+
+    const modal = await this.modalCtrl.create({
+      component: PoiModalComponent,
+      componentProps: {
+        id: poi.id,
+        title: poi.name,
+        info: poi.description,
+        image: poi.image,
+        video: poi.video,
+        isRouteContext: false
+      },
+      cssClass: 'poi-modal'
+    });
+
+    await modal.present();
+    await modal.onDidDismiss();
+  }
 
   aplicarFiltro(tipo: string) {
     this.currentFilter = tipo;

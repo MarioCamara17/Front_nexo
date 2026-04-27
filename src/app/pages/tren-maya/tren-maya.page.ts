@@ -11,10 +11,7 @@ import { IonContent } from '@ionic/angular/standalone';
   imports: [IonContent, CommonModule, FormsModule]
 })
 export class TrenMayaPage implements OnInit {
+  constructor() {}
 
-  constructor() { }
-
-  ngOnInit() {
-  }
-
+  ngOnInit() {}
 }

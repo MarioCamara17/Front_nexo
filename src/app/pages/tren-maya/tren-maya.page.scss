@@ -2,111 +2,198 @@ ion-content {
   --background: #f5f7fa;
 }
 
-/* CONTENEDOR GENERAL */
-.rewards-container {
+.tren-page {
   display: flex;
   flex-direction: column;
-  padding: 16px;
   gap: 20px;
+  padding: 16px;
 }
 
-/* HEADER */
-.header h1 {
-  font-size: 1.6rem;
-  font-weight: bold;
-  margin: 0;
-  color: #1e1e1e;
-}
-
-.header p {
-  font-size: 0.9rem;
-  color: #6b7280;
-}
-
-/* TARJETA DE PUNTOS */
-.points-box {
-  background: linear-gradient(135deg, #f97316, #ef4444);
+/* HERO */
+.hero-card {
+  background: linear-gradient(135deg, #083344, #0f766e);
   color: white;
-  border-radius: 16px;
-  padding: 20px;
-  text-align: center;
-  box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+  border-radius: 18px;
+  padding: 20px 18px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
 }
 
-.points-box h2 {
+.eyebrow {
+  display: inline-block;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.82;
+  margin-bottom: 6px;
+}
+
+.hero-card h1 {
   margin: 0;
-  font-size: 1rem;
-  opacity: 0.9;
+  font-size: 1.65rem;
+  font-weight: 700;
 }
 
-.points-box .points {
-  font-size: 2rem;
-  font-weight: bold;
-  margin-top: 5px;
+.hero-card p {
+  margin: 8px 0 0;
+  font-size: 0.94rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 /* SECCIONES */
-.section h2 {
-  font-size: 1.2rem;
-  margin-bottom: 10px;
-  color: #1e1e1e;
-}
-
-/* INSIGNIAS */
-.badge {
+.section {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 12px;
-  padding: 12px;
-  border-radius: 12px;
-  margin-bottom: 10px;
 }
 
-.badge span {
-  font-size: 1.8rem;
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
 }
 
-.badge h3 {
+.section-header h2 {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 1.15rem;
+  color: #111827;
 }
 
-.badge p {
+.section-note {
+  font-size: 0.78rem;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+/* RUTA DESTACADA */
+.route-highlight {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-left: 5px solid #0ea5e9;
+}
+
+.route-highlight h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.route-highlight p {
   margin: 0;
+  color: #6b7280;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.route-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.route-tags span {
+  background: #e0f2fe;
+  color: #075985;
+  padding: 6px 10px;
+  border-radius: 999px;
   font-size: 0.75rem;
 }
 
-/* INSIGNIA DESBLOQUEADA */
-.badge.unlocked {
-  background: #ecfdf5;
-  color: #065f46;
+/* ESTACIONES / PUNTOS */
+.stations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-/* INSIGNIA BLOQUEADA */
-.badge.locked {
-  background: #e5e7eb;
+.station-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: white;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.station-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #ecfeff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.station-card h3 {
+  margin: 0 0 4px;
+  font-size: 0.98rem;
+  color: #111827;
+}
+
+.station-card p {
+  margin: 0;
+  font-size: 0.84rem;
   color: #6b7280;
-  opacity: 0.6;
+  line-height: 1.4;
 }
 
-/* BARRA DE PROGRESO */
-.progress-bar {
-  width: 100%;
-  height: 10px;
-  background: #e5e7eb;
-  border-radius: 10px;
-  overflow: hidden;
+/* INTEGRACIÓN */
+.integration-card {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #0ea5e9, #22c55e);
-  border-radius: 10px;
-  transition: width 0.3s ease;
-}
-
-.progress-text {
-  font-size: 0.8rem;
+.integration-card p {
+  margin: 0 0 14px;
+  font-size: 0.88rem;
   color: #6b7280;
-  margin-top: 5px;
+  line-height: 1.45;
+}
+
+.integration-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.integration-item {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.integration-item strong {
+  font-size: 0.9rem;
+  color: #0f172a;
+}
+
+.integration-item span {
+  font-size: 0.78rem;
+  color: #6b7280;
+  line-height: 1.35;
+}
+
+/* RESPONSIVO */
+@media (max-width: 576px) {
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .integration-grid {
+    grid-template-columns: 1fr;
+  }
 }

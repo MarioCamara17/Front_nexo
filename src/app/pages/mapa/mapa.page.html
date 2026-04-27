@@ -3,6 +3,17 @@
     <div class="map-header">
       <h1>🗺️ Explora Tabasco</h1>
       <p>Descubre lugares, rutas y experiencias</p>
+      <p class="location-error" *ngIf="locationError">{{ locationError }}</p>
+
+      <div class="route-mode-actions">
+        <button
+          class="route-mode-btn"
+          [class.active]="isCreatingRoute"
+          (click)="toggleRouteCreation()"
+        >
+          {{ isCreatingRoute ? 'Cancelar ruta' : 'Crear mi ruta' }}
+        </button>
+      </div>
     </div>
 
     <div class="map-filters">
@@ -50,11 +61,49 @@
     <div class="map-container">
       <app-leaflet-map
         [pois]="filteredPois"
+        [userLocation]="userLocation"
         (poiClicked)="abrirPoiModal($event)">
       </app-leaflet-map>
     </div>
 
-    <div class="poi-preview" *ngIf="selectedPoi">
+    <div class="route-builder" *ngIf="isCreatingRoute">
+      <div class="route-builder-header">
+        <h3>🧭 Mi ruta personalizada</h3>
+        <span>{{ customRoute.length }} parada(s)</span>
+      </div>
+
+      <p class="route-builder-help">
+        Toca los marcadores del mapa para agregar lugares a tu ruta.
+      </p>
+
+      <div class="route-list" *ngIf="customRoute.length > 0; else emptyRoute">
+        <div class="route-item" *ngFor="let poi of customRoute; let i = index">
+          <div class="route-order">{{ i + 1 }}</div>
+
+          <div class="route-item-info">
+            <strong>{{ poi.name }}</strong>
+            <span>{{ poi.category.name }}</span>
+          </div>
+
+          <button class="remove-btn" (click)="eliminarDeRuta(poi.id)">✕</button>
+        </div>
+      </div>
+
+      <ng-template #emptyRoute>
+        <p class="empty-route-text">Aún no has agregado lugares a tu ruta.</p>
+      </ng-template>
+
+      <div class="route-builder-actions">
+        <button class="preview-btn secondary" (click)="limpiarRutaPersonalizada()">
+          Limpiar
+        </button>
+        <button class="preview-btn primary" (click)="finalizarRuta()">
+          Finalizar
+        </button>
+      </div>
+    </div>
+
+    <div class="poi-preview" *ngIf="selectedPoi && !isCreatingRoute">
       <img [src]="selectedPoi.image" [alt]="selectedPoi.name">
 
       <div class="info">

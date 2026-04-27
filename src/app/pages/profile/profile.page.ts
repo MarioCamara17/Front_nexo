@@ -19,19 +19,27 @@ export class ProfilePage implements OnInit, OnDestroy {
   user: User = { first_name: '', last_name: '', email: '', avatar: '', description: '' };
   private userSubscription?: Subscription;
 
+  // Datos de gamificación temporales
+  userPoints = 180;
+  nextBadgePoints = 200;
+  visitedPlaces = 6;
+  completedRoutes = 2;
+
   constructor(
     private userService: UserService,
     private authService: AuthService,
     private alertController: AlertController
   ) {}
 
+  get progressPercent(): number {
+    return Math.min((this.userPoints / this.nextBadgePoints) * 100, 100);
+  }
+
   ionViewWillEnter() {
-    // Actualizar los datos del usuario cada vez que la página se va a mostrar
     this.loadUserData();
   }
 
   ngOnInit() {
-    // Carga inicial de datos
     this.loadUserData();
   }
 
@@ -42,15 +50,13 @@ export class ProfilePage implements OnInit, OnDestroy {
   }
 
   private loadUserData() {
-    // Cancelar suscripción anterior si existe
     if (this.userSubscription) {
       this.userSubscription.unsubscribe();
     }
-    
-    // Crear nueva suscripción
+
     this.userSubscription = this.userService.getUser().subscribe({
       next: (user) => {
-      this.user = user;
+        this.user = user;
       },
       error: (error) => {
         console.error('Error al cargar datos del usuario:', error);
