@@ -12,17 +12,19 @@ ion-content {
 .modal-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 1rem;
   padding: 0 1.5em;
   margin-top: 1rem;
 }
 
 .modal-header h2 {
   font-family: "SansPro";
-  font-size: 2rem;
+  font-size: 1.8rem;
   font-weight: bold;
-  color: #424242;
+  color: #1f2937;
   margin: 0;
+  line-height: 1.15;
 }
 
 /* BOTONES */
@@ -30,7 +32,8 @@ ion-content {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.25rem;
+  flex-shrink: 0;
 }
 
 .buttons-container button {
@@ -40,17 +43,18 @@ ion-content {
 }
 
 .audio-button {
-  padding: 0.5em;
+  padding: 0.4em;
   border-radius: 50%;
-  padding-right: 1em;
 }
 
-.audio-button mat-icon {
-  font-size: 2.5rem;
-  width: 2.5rem;
-  height: 2.5rem;
+.audio-button mat-icon,
+.favorites-button mat-icon,
+.visited-button mat-icon {
+  font-size: 2.2rem;
+  width: 2.2rem;
+  height: 2.2rem;
   color: #c8c8c8;
-  transition: color 0.3s ease;
+  transition: color 0.3s ease, transform 0.3s ease;
 }
 
 .audio-button mat-icon.speaking {
@@ -58,11 +62,8 @@ ion-content {
   animation: pulse 1s infinite ease-in-out;
 }
 
-.favorites-button {
-  background-color: transparent;
-}
-
-.favorites-button.processing {
+.favorites-button.processing,
+.visited-button.processing {
   opacity: 0.6;
   cursor: not-allowed;
   animation: pulse 1.5s infinite;
@@ -73,80 +74,64 @@ ion-content {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  color: transparent;
 }
 
 .no-favorite {
   color: #c8c8c8 !important;
 }
 
-.favorites-button mat-icon {
-  font-size: 2.5rem;
-  width: 2.5rem;
-  height: 2.5rem;
-  color: #c8c8c8;
-}
-
-.visited-button {
-  background-color: transparent;
-  margin-left: 0.5em;
-}
-
-.visited-button.processing {
-  opacity: 0.6;
-  cursor: not-allowed;
-  animation: pulse 1.5s infinite;
-}
-
 .visited {
-  color: #059FAE !important;
+  color: #059fae !important;
 }
 
 .not-visited {
   color: #c8c8c8 !important;
 }
 
-.visited-button mat-icon {
-  font-size: 2.5rem;
-  width: 2.5rem;
-  height: 2.5rem;
-}
-
 .modal-close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  background: #f3f4f6 !important;
   border: none;
   cursor: pointer;
+  border-radius: 50%;
+  width: 2.2rem;
+  height: 2.2rem;
 }
 
 .modal-close mat-icon {
-  font-size: 2rem;
-  color: #666;
+  font-size: 1.6rem;
+  color: #4b5563;
 }
 
 /* INFO */
 .modal-info {
   padding: 0 1.5em;
+  margin-top: 0.8rem;
 }
 
 .modal-info p {
   font-family: "SansPro";
-  font-size: 1.1rem;
+  font-size: 1rem;
   text-align: justify;
-  color: #424242;
+  color: #4b5563;
+  line-height: 1.45;
+  margin: 0;
 }
 
 .modal-info .route-duration {
+  margin-top: 0.8rem;
   font-weight: 600;
-  color: #535353;
+  color: #374151;
 }
 
 /* DIVISOR */
 hr {
   width: 90%;
   margin: 1em auto;
-  background-color: #4d4d4d;
+  background-color: #e5e7eb;
   height: 1px;
   border: none;
 }
@@ -162,10 +147,11 @@ hr {
 .image-container img {
   display: block;
   margin: 0 auto;
-  width: 75%;
-  height: 25vh;
+  width: 88%;
+  height: 26vh;
   object-fit: cover;
-  border-radius: 0.5em;
+  border-radius: 1rem;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.14);
 }
 
 .play-button {
@@ -173,14 +159,20 @@ hr {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 2rem;
-  background-color: rgba(255, 255, 255, 0.9);
-  color: red;
+  background-color: rgba(255, 255, 255, 0.92);
+  color: #dc2626;
   border: none;
   border-radius: 50%;
-  padding: 0.4em 0.6em;
+  padding: 0.45em 0.6em;
   cursor: pointer;
   z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.play-button mat-icon {
+  font-size: 2rem;
+  width: 2rem;
+  height: 2rem;
 }
 
 .video-player {
@@ -188,17 +180,73 @@ hr {
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 100%;
-  max-width: 75%;
-  height: 25vh;
+  width: 88%;
+  height: 26vh;
   object-fit: cover;
   z-index: 9;
-  border-radius: 0.5em;
+  border-radius: 1rem;
+}
+
+/* DETALLES DEL LUGAR */
+.detail-sections {
+  padding: 0 1.5em 1.5em;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.detail-section {
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 14px;
+  border-left: 4px solid #0f766e;
+}
+
+.detail-section h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.detail-section p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #4b5563;
+  line-height: 1.5;
+  text-align: justify;
+}
+
+.visit-data {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.visit-item {
+  background: #ecfdf5;
+  border-radius: 14px;
+  padding: 12px;
+  border: 1px solid #d1fae5;
+}
+
+.visit-item strong {
+  display: block;
+  font-size: 0.82rem;
+  color: #065f46;
+  margin-bottom: 4px;
+}
+
+.visit-item span {
+  display: block;
+  font-size: 0.84rem;
+  color: #374151;
+  line-height: 1.35;
 }
 
 /* RUTA Y POIS */
 .pois-container {
-  padding: 0 1.5em;
+  padding: 0 1.5em 1.5em;
 }
 
 .pois-container h3 {
@@ -217,15 +265,15 @@ hr {
   display: flex;
   gap: 16px;
   padding: 12px;
-  border-radius: 8px;
-  background-color: #f5f5f5;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  background-color: #f8fafc;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .poi-image {
   flex: 0 0 120px;
   height: 120px;
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
 }
 
@@ -242,14 +290,51 @@ hr {
 .poi-info h4 {
   margin: 0 0 8px 0;
   font-size: 1.1em;
-  color: #4d4d4d;
+  color: #1f2937;
 }
 
 .poi-info p {
   margin: 0;
   font-size: 0.9em;
-  color: #4d4d4d;
+  color: #4b5563;
   text-align: justify;
+  line-height: 1.4;
+}
+
+/* RESPONSIVO */
+@media (max-width: 576px) {
+  .modal-header {
+    align-items: flex-start;
+  }
+
+  .modal-header h2 {
+    font-size: 1.45rem;
+  }
+
+  .buttons-container {
+    gap: 0.1rem;
+  }
+
+  .audio-button mat-icon,
+  .favorites-button mat-icon,
+  .visited-button mat-icon {
+    font-size: 1.9rem;
+    width: 1.9rem;
+    height: 1.9rem;
+  }
+
+  .visit-data {
+    grid-template-columns: 1fr;
+  }
+
+  .poi-item {
+    flex-direction: column;
+  }
+
+  .poi-image {
+    width: 100%;
+    flex: none;
+  }
 }
 
 /* ANIMACIÓN */
@@ -257,9 +342,11 @@ hr {
   0% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(1.1);
   }
+
   100% {
     transform: scale(1);
   }

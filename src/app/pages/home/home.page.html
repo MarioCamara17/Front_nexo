@@ -12,22 +12,43 @@
       </div>
     </div>
 
+    <!-- TARJETA DE PUNTOS DINÁMICA -->
     <div class="points-card">
       <div class="points-top">
         <div>
           <h2>⭐ Tus puntos</h2>
-          <p class="points">180 pts</p>
+          <p class="points">{{ userPoints }} pts</p>
         </div>
-        <div class="badge-pill">Nivel explorador</div>
+
+        <div class="badge-pill">
+          {{ currentLevel.name }}
+        </div>
       </div>
 
       <div class="progress-block">
         <div class="progress-label">
-          <span>Progreso hacia tu próxima insignia</span>
-          <span>20 pts restantes</span>
+          <span *ngIf="nextLevel">
+            Progreso hacia {{ nextLevel.name }}
+          </span>
+
+          <span *ngIf="!nextLevel">
+            Nivel máximo alcanzado
+          </span>
+
+          <span *ngIf="nextLevel">
+            {{ pointsToNextLevel }} pts restantes
+          </span>
+
+          <span *ngIf="!nextLevel">
+            Completado
+          </span>
         </div>
+
         <div class="progress-bar">
-          <div class="progress-fill"></div>
+          <div
+            class="progress-fill"
+            [style.width.%]="progressPercent">
+          </div>
         </div>
       </div>
 

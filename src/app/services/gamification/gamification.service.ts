@@ -1,46 +1,30 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { IonAvatar, IonButton, AlertController, IonContent } from '@ionic/angular/standalone';
-import { RouterModule } from '@angular/router';
-import { User } from 'src/app/models/user.model';
-import { UserService } from 'src/app/services/user/user.service';
-import { AuthService } from '../../services/auth/auth.service';
-import { Subscription } from 'rxjs';
+import { Injectable } from '@angular/core';
 
-
-interface UserLevel {
+export interface UserLevel {
   name: string;
   minPoints: number;
   maxPoints: number | null;
 }
 
-interface Badge {
+export interface Badge {
   icon: string;
   name: string;
   description: string;
   unlocked: boolean;
 }
 
-interface Activity {
+export interface Activity {
   icon: string;
   title: string;
   points: number;
   date: string;
 }
 
-@Component({
-  selector: 'app-profile',
-  templateUrl: './profile.page.html',
-  styleUrls: ['./profile.page.scss'],
-  standalone: true,
-  imports: [CommonModule, FormsModule, IonContent, IonAvatar, IonButton, RouterModule],
+@Injectable({
+  providedIn: 'root'
 })
-export class ProfilePage implements OnInit, OnDestroy {
-  user: User = { first_name: '', last_name: '', email: '', avatar: '', description: '' };
-  private userSubscription?: Subscription;
-
-  // Datos temporales de gamificación
+export class GamificationService {
+  // Datos temporales simulados
   visitedPlaces = 6;
   favoritePlaces = 4;
   completedRoutes = 2;
@@ -83,13 +67,7 @@ export class ProfilePage implements OnInit, OnDestroy {
     }
   ];
 
-  constructor(
-    private userService: UserService,
-    private authService: AuthService,
-    private alertController: AlertController
-  ) {}
-
-  get userPoints(): number {
+  getUserPoints(): number {
     return (
       this.visitedPlaces * 50 +
       this.favoritePlaces * 10 +
@@ -100,42 +78,53 @@ export class ProfilePage implements OnInit, OnDestroy {
     );
   }
 
-  get currentLevel(): UserLevel {
+  getCurrentLevel(): UserLevel {
+    const points = this.getUserPoints();
+
     return this.levels.find(level => {
       if (level.maxPoints === null) {
-        return this.userPoints >= level.minPoints;
+        return points >= level.minPoints;
       }
 
-      return this.userPoints >= level.minPoints && this.userPoints <= level.maxPoints;
+      return points >= level.minPoints && points <= level.maxPoints;
     }) || this.levels[0];
   }
 
-  get nextLevel(): UserLevel | null {
-    const currentIndex = this.levels.findIndex(level => level.name === this.currentLevel.name);
+  getNextLevel(): UserLevel | null {
+    const currentLevel = this.getCurrentLevel();
+    const currentIndex = this.levels.findIndex(level => level.name === currentLevel.name);
+
     return this.levels[currentIndex + 1] || null;
   }
 
-  get pointsToNextLevel(): number {
-    if (!this.nextLevel) {
+  getPointsToNextLevel(): number {
+    const points = this.getUserPoints();
+    const nextLevel = this.getNextLevel();
+
+    if (!nextLevel) {
       return 0;
     }
 
-    return Math.max(this.nextLevel.minPoints - this.userPoints, 0);
+    return Math.max(nextLevel.minPoints - points, 0);
   }
 
-  get progressPercent(): number {
-    if (!this.nextLevel) {
+  getProgressPercent(): number {
+    const points = this.getUserPoints();
+    const currentLevel = this.getCurrentLevel();
+    const nextLevel = this.getNextLevel();
+
+    if (!nextLevel) {
       return 100;
     }
 
-    const currentMin = this.currentLevel.minPoints;
-    const nextMin = this.nextLevel.minPoints;
-    const progress = ((this.userPoints - currentMin) / (nextMin - currentMin)) * 100;
+    const progress = ((points - currentLevel.minPoints) / (nextLevel.minPoints - currentLevel.minPoints)) * 100;
 
     return Math.min(Math.max(progress, 0), 100);
   }
 
-  get badges(): Badge[] {
+  getBadges(): Badge[] {
+    const points = this.getUserPoints();
+
     return [
       {
         icon: '📍',
@@ -183,62 +172,12 @@ export class ProfilePage implements OnInit, OnDestroy {
         icon: '🏆',
         name: 'Embajador de Tabasco',
         description: 'Alcanza 1000 puntos dentro de NEXO.',
-        unlocked: this.userPoints >= 1000
+        unlocked: points >= 1000
       }
     ];
   }
 
-  get unlockedBadgesCount(): number {
-    return this.badges.filter(badge => badge.unlocked).length;
-  }
-
-  ionViewWillEnter() {
-    this.loadUserData();
-  }
-
-  ngOnInit() {
-    this.loadUserData();
-  }
-
-  ngOnDestroy() {
-    if (this.userSubscription) {
-      this.userSubscription.unsubscribe();
-    }
-  }
-
-  private loadUserData() {
-    if (this.userSubscription) {
-      this.userSubscription.unsubscribe();
-    }
-
-    this.userSubscription = this.userService.getUser().subscribe({
-      next: (user) => {
-        this.user = user;
-      },
-      error: (error) => {
-        console.error('Error al cargar datos del usuario:', error);
-      }
-    });
-  }
-
-  async logout() {
-    const alert = await this.alertController.create({
-      header: 'Cerrar sesión',
-      message: '¿Estás seguro de que deseas cerrar sesión?',
-      buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel'
-        },
-        {
-          text: 'Cerrar sesión',
-          handler: () => {
-            this.authService.logout();
-          }
-        }
-      ]
-    });
-
-    await alert.present();
+  getUnlockedBadgesCount(): number {
+    return this.getBadges().filter(badge => badge.unlocked).length;
   }
 }

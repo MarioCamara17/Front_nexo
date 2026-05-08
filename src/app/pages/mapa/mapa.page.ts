@@ -143,26 +143,32 @@ export class MapaPage implements OnInit, OnDestroy {
   }
 
   async abrirDetalleCompleto(poi: Poi, event?: Event) {
-    if (event) {
-      (event.target as HTMLElement)?.blur();
-    }
-
-    const modal = await this.modalCtrl.create({
-      component: PoiModalComponent,
-      componentProps: {
-        id: poi.id,
-        title: poi.name,
-        info: poi.description,
-        image: poi.image,
-        video: poi.video,
-        isRouteContext: false
-      },
-      cssClass: 'poi-modal'
-    });
-
-    await modal.present();
-    await modal.onDidDismiss();
+  if (event) {
+    (event.target as HTMLElement)?.blur();
   }
+
+  const modal = await this.modalCtrl.create({
+    component: PoiModalComponent,
+    componentProps: {
+      id: poi.id,
+      title: poi.name,
+      info: poi.description,
+      image: poi.image,
+      video: poi.video,
+      isRouteContext: false,
+      history: poi.history,
+      importance: poi.importance,
+      recommendations: poi.recommendations,
+      schedule: poi.schedule,
+      cost: poi.cost,
+      tips: poi.tips
+    },
+    cssClass: 'poi-modal'
+  });
+
+  await modal.present();
+  await modal.onDidDismiss();
+}
 
   aplicarFiltro(tipo: string) {
     this.currentFilter = tipo;

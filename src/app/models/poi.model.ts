@@ -26,6 +26,14 @@ export interface Poi {
   id: string;
   name: string;
   description: string;
+
+  history?: string;
+  importance?: string;
+  recommendations?: string;
+  schedule?: string;
+  cost?: string;
+  tips?: string;
+
   latitude: string;
   longitude: string;
   image: string;

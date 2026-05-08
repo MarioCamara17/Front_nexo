@@ -5,19 +5,18 @@ import {
   IonContent,
   IonRefresher,
   IonRefresherContent,
-  IonButton,
   IonFab,
   IonFabButton
 } from '@ionic/angular/standalone';
 import { RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
+
 import { PoiCardComponent } from '../../components/poi-card/poi-card.component';
 import { PoiService } from 'src/app/services/poi/poi.service';
 import { FavoritesService } from 'src/app/services/favorites/favorites.service';
 import { AuthService } from 'src/app/services/auth/auth.service';
+import { GamificationService } from 'src/app/services/gamification/gamification.service';
 import { Poi } from 'src/app/models/poi.model';
-import { Subscription } from 'rxjs';
-
-// 👇 IMPORT SOLO PARA USO EN MODAL
 import { PoiModalComponent } from 'src/app/components/poi-modal/poi-modal.component';
 
 @Component({
@@ -29,7 +28,6 @@ import { PoiModalComponent } from 'src/app/components/poi-modal/poi-modal.compon
     IonContent,
     IonRefresher,
     IonRefresherContent,
-    IonButton,
     IonFab,
     IonFabButton,
     RouterLink,
@@ -39,7 +37,6 @@ import { PoiModalComponent } from 'src/app/components/poi-modal/poi-modal.compon
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class HomePage implements OnInit, OnDestroy {
-
   poiList: Poi[] = [];
   isLoading = false;
   private subscriptions: Subscription[] = [];
@@ -48,14 +45,35 @@ export class HomePage implements OnInit, OnDestroy {
     private modalCtrl: ModalController,
     private poiService: PoiService,
     private favoritesService: FavoritesService,
-    private authService: AuthService
+    private authService: AuthService,
+    private gamificationService: GamificationService
   ) {}
+
+  get userPoints(): number {
+    return this.gamificationService.getUserPoints();
+  }
+
+  get currentLevel() {
+    return this.gamificationService.getCurrentLevel();
+  }
+
+  get nextLevel() {
+    return this.gamificationService.getNextLevel();
+  }
+
+  get pointsToNextLevel(): number {
+    return this.gamificationService.getPointsToNextLevel();
+  }
+
+  get progressPercent(): number {
+    return this.gamificationService.getProgressPercent();
+  }
 
   ngOnInit() {
     this.loadPois();
 
     this.subscriptions.push(
-      this.authService.isAuthenticated$.subscribe(isAuthenticated => {
+      this.authService.isAuthenticated$.subscribe((isAuthenticated: boolean) => {
         if (isAuthenticated) {
           console.log('Usuario autenticado, recargando POIs');
           this.loadPois();
@@ -85,12 +103,13 @@ export class HomePage implements OnInit, OnDestroy {
 
   loadPois() {
     this.isLoading = true;
+
     this.poiService.getAll().subscribe({
-      next: pois => {
+      next: (pois: Poi[]) => {
         this.poiList = pois;
         this.isLoading = false;
       },
-      error: error => {
+      error: (error: unknown) => {
         console.error('Error al cargar POIs:', error);
         this.isLoading = false;
       }
@@ -101,11 +120,11 @@ export class HomePage implements OnInit, OnDestroy {
     this.favoritesService.refresh();
 
     this.poiService.getAll().subscribe({
-      next: pois => {
+      next: (pois: Poi[]) => {
         this.poiList = pois;
         event.target.complete();
       },
-      error: error => {
+      error: (error: unknown) => {
         console.error('Error al recargar POIs:', error);
         event.target.complete();
       }
@@ -121,7 +140,13 @@ export class HomePage implements OnInit, OnDestroy {
           title: poi.name,
           info: poi.description,
           image: poi.image,
-          video: poi.video
+          video: poi.video,
+          history: poi.history,
+          importance: poi.importance,
+          recommendations: poi.recommendations,
+          schedule: poi.schedule,
+          cost: poi.cost,
+          tips: poi.tips
         },
         cssClass: 'poi-modal'
       });
@@ -129,6 +154,7 @@ export class HomePage implements OnInit, OnDestroy {
       await modal.present();
 
       const { data } = await modal.onDidDismiss();
+
       if (data && data.refresh) {
         this.loadPois();
       }

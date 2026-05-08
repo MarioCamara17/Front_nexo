@@ -1,5 +1,5 @@
 import { Component, Input, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { IonContent, ModalController, IonButton } from '@ionic/angular/standalone';
+import { IonContent, ModalController } from '@ionic/angular/standalone';
 import { CommonModule } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
@@ -25,6 +25,15 @@ export class PoiModalComponent implements OnInit, OnDestroy {
   @Input() info?: string;
   @Input() image?: string;
   @Input() video?: string;
+
+  // Información detallada del lugar
+  @Input() history?: string;
+  @Input() importance?: string;
+  @Input() recommendations?: string;
+  @Input() schedule?: string;
+  @Input() cost?: string;
+  @Input() tips?: string;
+
   @Input() route?: Route;
   @Input() pois?: Poi[];
   @Input() displayMode: 'modal' | 'popup' = 'modal';
@@ -38,9 +47,10 @@ export class PoiModalComponent implements OnInit, OnDestroy {
   visitDate: Date | null = null;
   isProcessingFavorite = false;
   isProcessingVisit = false;
-  private favSubscription!: Subscription;
-  private visitedSubscription!: Subscription;
-  private authSubscription!: Subscription;
+
+  private favSubscription?: Subscription;
+  private visitedSubscription?: Subscription;
+  private authSubscription?: Subscription;
 
   constructor(
     private favoriteService: FavoritesService,
@@ -48,61 +58,49 @@ export class PoiModalComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private modalCtrl: ModalController,
     private cdr: ChangeDetectorRef
-  ) {
-    console.log('PoiModalComponent constructor');
-  }
+  ) {}
 
   ngOnInit() {
     console.log('PoiModalComponent ngOnInit, id:', this.id);
-    
+
     if (this.id) {
-      console.log('Suscribiéndose a favoritos para id:', this.id);
       this.favSubscription = this.favoriteService
         .getFavorites()
         .subscribe((favs) => {
-          console.log('Favoritos actualizados:', favs);
           const wasFav = this.isFav;
           this.isFav = favs.includes(this.id!);
-          console.log('Estado de favorito para', this.id, ':', this.isFav);
-          
-          // Solo resetear el flag si el estado cambió
+
           if (wasFav !== this.isFav) {
             this.isProcessingFavorite = false;
           }
-          
-          this.cdr.detectChanges(); // Forzar detección de cambios
+
+          this.cdr.detectChanges();
         });
-        
-      console.log('Suscribiéndose a visitados para id:', this.id);
+
       this.visitedSubscription = this.visitedService
         .getVisited()
         .subscribe((visited) => {
-          console.log('Visitados actualizados:', visited);
           const wasVisited = this.isVisited;
           this.isVisited = visited.includes(this.id!);
-          console.log('Estado de visitado para', this.id, ':', this.isVisited);
-          
-          // Actualizar la fecha de visita si está visitado
+
           if (this.isVisited) {
             this.visitDate = this.visitedService.getVisitDateById(this.id!);
           } else {
             this.visitDate = null;
           }
-          
-          // Solo resetear el flag si el estado cambió
+
           if (wasVisited !== this.isVisited) {
             this.isProcessingVisit = false;
           }
-          
-          this.cdr.detectChanges(); // Forzar detección de cambios
+
+          this.cdr.detectChanges();
         });
-      
+
       this.authSubscription = this.authService.isAuthenticated$.subscribe(isAuthenticated => {
         if (isAuthenticated) {
           console.log('Usuario autenticado, actualizando estado de favoritos y visitas');
-          // No es necesario hacer nada más, ya que los servicios se actualizarán automáticamente
         }
-        });
+      });
     }
   }
 
@@ -110,16 +108,12 @@ export class PoiModalComponent implements OnInit, OnDestroy {
     if (!this.id || this.isProcessingFavorite) {
       return;
     }
-    
+
     this.isProcessingFavorite = true;
-    console.log(`Cambiando estado de favorito para ${this.id}`);
-    
+
     this.favoriteService.toggleFavorite(this.id).subscribe({
       next: (success) => {
-        if (success) {
-          console.log(`Estado de favorito cambiado correctamente para ${this.id}`);
-          // El estado se actualizará a través de la suscripción
-        } else {
+        if (!success) {
           console.error(`Error al cambiar estado de favorito para ${this.id}`);
           this.isProcessingFavorite = false;
         }
@@ -127,31 +121,23 @@ export class PoiModalComponent implements OnInit, OnDestroy {
       error: (error) => {
         console.error(`Error al cambiar estado de favorito para ${this.id}:`, error);
         this.isProcessingFavorite = false;
-      },
-      complete: () => {
-        // Notificar a la página principal que debe actualizarse
-        // Se hará cuando se cierre el modal
       }
     });
   }
-  
+
   onVisitedClick(event: Event) {
     event.stopPropagation();
-    event.preventDefault(); // Prevenir comportamiento por defecto
-    
+    event.preventDefault();
+
     if (!this.id || this.isProcessingVisit) {
       return;
     }
-    
+
     this.isProcessingVisit = true;
-    console.log(`Cambiando estado de visita para ${this.id}`);
-    
+
     this.visitedService.toggleVisited(this.id).subscribe({
       next: (success) => {
-        if (success) {
-          console.log(`Estado de visita cambiado correctamente para ${this.id}`);
-          // El estado se actualizará a través de la suscripción
-        } else {
+        if (!success) {
           console.error(`Error al cambiar estado de visita para ${this.id}`);
           this.isProcessingVisit = false;
         }
@@ -171,40 +157,52 @@ export class PoiModalComponent implements OnInit, OnDestroy {
     if (this.isSpeaking) {
       await TextToSpeech.stop();
       this.isSpeaking = false;
-    } else {
-      this.isSpeaking = true;
-      const textToSpeak = this.isRouteContext ? this.route?.description || '' : this.info || '';
-
-      await TextToSpeech.speak({
-        text: textToSpeak,
-        lang: 'es-MX',
-        rate: 1.0,
-        pitch: 1.0,
-        volume: 1.0,
-      });
-
-      this.isSpeaking = false;
+      return;
     }
+
+    this.isSpeaking = true;
+
+    const detailedText = [
+      this.info,
+      this.history,
+      this.importance,
+      this.recommendations
+    ].filter(Boolean).join('. ');
+
+    const textToSpeak = this.isRouteContext
+      ? this.route?.description || ''
+      : detailedText || '';
+
+    await TextToSpeech.speak({
+      text: textToSpeak,
+      lang: 'es-MX',
+      rate: 1.0,
+      pitch: 1.0,
+      volume: 1.0,
+    });
+
+    this.isSpeaking = false;
   }
 
   ngOnDestroy(): void {
-    console.log('PoiModalComponent ngOnDestroy');
     TextToSpeech.stop();
+
     if (this.favSubscription) {
       this.favSubscription.unsubscribe();
     }
+
     if (this.visitedSubscription) {
       this.visitedSubscription.unsubscribe();
     }
+
     if (this.authSubscription) {
       this.authSubscription.unsubscribe();
     }
   }
-  
+
   dismiss(refresh: boolean = false) {
-    console.log('Cerrando modal/popup, refresh:', refresh);
     if (this.displayMode === 'modal') {
-      this.modalCtrl.dismiss({ refresh: refresh });
+      this.modalCtrl.dismiss({ refresh });
     } else if (this.displayMode === 'popup' && this.onPopupClose) {
       this.onPopupClose();
     }

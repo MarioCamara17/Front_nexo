@@ -14,7 +14,9 @@
         [disabled]="isProcessingFavorite"
         [class.processing]="isProcessingFavorite"
       >
-        <mat-icon [ngClass]="{ favorite: isFav, 'no-favorite': !isFav }">favorite</mat-icon>
+        <mat-icon [ngClass]="{ favorite: isFav, 'no-favorite': !isFav }">
+          favorite
+        </mat-icon>
       </button>
 
       <button
@@ -64,7 +66,7 @@
   </div>
 
   <div class="image-container" *ngIf="!isRouteContext && image">
-    <img [src]="image" alt="Imagen" />
+    <img [src]="image" alt="Imagen del lugar" />
 
     <button class="play-button" *ngIf="!showVideo && video" (click)="showVideo = true">
       <mat-icon>play_arrow</mat-icon>
@@ -77,5 +79,42 @@
       autoplay
       (ended)="onVideoEnded()"
     ></video>
+  </div>
+
+  <div
+    class="detail-sections"
+    *ngIf="!isRouteContext && (history || importance || recommendations || schedule || cost || tips)"
+  >
+    <div class="detail-section" *ngIf="history">
+      <h3>Historia</h3>
+      <p>{{ history }}</p>
+    </div>
+
+    <div class="detail-section" *ngIf="importance">
+      <h3>Importancia turística</h3>
+      <p>{{ importance }}</p>
+    </div>
+
+    <div class="detail-section" *ngIf="recommendations">
+      <h3>Recomendaciones</h3>
+      <p>{{ recommendations }}</p>
+    </div>
+
+    <div class="visit-data" *ngIf="schedule || cost">
+      <div class="visit-item" *ngIf="schedule">
+        <strong>Horario</strong>
+        <span>{{ schedule }}</span>
+      </div>
+
+      <div class="visit-item" *ngIf="cost">
+        <strong>Costo</strong>
+        <span>{{ cost }}</span>
+      </div>
+    </div>
+
+    <div class="detail-section" *ngIf="tips">
+      <h3>Consejos</h3>
+      <p>{{ tips }}</p>
+    </div>
   </div>
 </ion-content>
