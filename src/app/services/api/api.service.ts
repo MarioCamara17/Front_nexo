@@ -111,6 +111,27 @@ export class ApiService {
     );
   }
 
+  patchFormData<T>(endpoint: string, formData: FormData): Observable<T> {
+  const token = localStorage.getItem('token');
+
+  let headers = new HttpHeaders();
+
+  if (token) {
+    headers = headers.set('Authorization', `Token ${token}`);
+  }
+
+  console.log(`PATCH FormData: ${this.baseApiPath}${endpoint}`, formData);
+
+  return this.http.patch<T>(`${this.baseApiPath}${endpoint}`, formData, {
+    headers,
+    withCredentials: true
+  }).pipe(
+    timeout(this.timeoutMs),
+    tap(response => console.log(`Respuesta PATCH FormData ${endpoint}:`, response)),
+    catchError(this.handleError)
+  );
+}
+
   deleteData<T>(endpoint: string, headers?: HttpHeaders): Observable<T> {
     const options = {
       headers: headers || this.getAuthHeaders(),
@@ -220,61 +241,61 @@ export class ApiService {
   }
 
   // Método completamente reescrito para manejar favoritos
-  addFavorite<T>(data: { place: string, user: number }, headers?: HttpHeaders): Observable<T> {
-    const actualHeaders = headers || this.getAuthHeaders();
-    
-    // 1. Primero verificamos si el favorito ya existe
-    return this.http.get<any>(`${this.baseApiPath}/favorites/?place=${data.place}`, {
-      headers: actualHeaders,
-      withCredentials: true
-    }).pipe(
-      map(response => {
-        if (response && response.results && response.results.length > 0) {
-          // Si existe, devolvemos el favorito existente
-          console.log('Favorito ya existe, usando el existente:', response.results[0]);
-          return response.results[0];
-        }
-        return null; // No existe
-      }),
-      catchError(error => {
-        console.error('Error al verificar favorito existente:', error);
-        return of(null); // Asumimos que no existe
-      }),
-      switchMap(existingFavorite => {
-        if (existingFavorite) {
-          return of(existingFavorite as T);
-        }
-        
-        // 2. Si no existe, lo creamos usando el método POST estándar
-        return this.http.post<T>(`${this.baseApiPath}/favorites/`, data, {
-          headers: actualHeaders,
-          withCredentials: true
-        }).pipe(
-          catchError(error => {
-            console.error('Error al crear favorito, intentando obtener existente:', error);
-            
-            // 3. Si hay error, intentamos buscar de nuevo (puede que se haya creado en otro lugar)
-            return this.http.get<any>(`${this.baseApiPath}/favorites/?place=${data.place}`, {
-              headers: actualHeaders,
-              withCredentials: true
-            }).pipe(
-              map(response => {
-                if (response && response.results && response.results.length > 0) {
-                  console.log('Favorito encontrado después del error:', response.results[0]);
-                  return response.results[0] as T;
-  }
-                throw error; // Si no existe, propagamos el error original
-              }),
-              catchError(() => {
-                throw error; // Si falla la búsqueda, propagamos el error original
-              })
-            );
-          })
-        );
-      })
-    );
-  }
+  addFavorite<T>(
+  data: { place: string; user: string | number },
+  headers?: HttpHeaders
+): Observable<T> {
+  const actualHeaders = headers || this.getAuthHeaders();
 
+  return this.http.get<any>(`${this.baseApiPath}/favorites/?place=${data.place}`, {
+    headers: actualHeaders,
+    withCredentials: true
+  }).pipe(
+    map(response => {
+      if (response && response.results && response.results.length > 0) {
+        console.log('Favorito ya existe, usando el existente:', response.results[0]);
+        return response.results[0];
+      }
+
+      return null;
+    }),
+    catchError(error => {
+      console.error('Error al verificar favorito existente:', error);
+      return of(null);
+    }),
+    switchMap(existingFavorite => {
+      if (existingFavorite) {
+        return of(existingFavorite as T);
+      }
+
+      return this.http.post<T>(`${this.baseApiPath}/favorites/`, data, {
+        headers: actualHeaders,
+        withCredentials: true
+      }).pipe(
+        catchError(error => {
+          console.error('Error al crear favorito, intentando obtener existente:', error);
+
+          return this.http.get<any>(`${this.baseApiPath}/favorites/?place=${data.place}`, {
+            headers: actualHeaders,
+            withCredentials: true
+          }).pipe(
+            map(response => {
+              if (response && response.results && response.results.length > 0) {
+                console.log('Favorito encontrado después del error:', response.results[0]);
+                return response.results[0] as T;
+              }
+
+              throw error;
+            }),
+            catchError(() => {
+              throw error;
+            })
+          );
+        })
+      );
+    })
+  );
+}
   removeFavorite<T>(favoriteId: string, headers?: HttpHeaders): Observable<T> {
     return this.deleteData<T>(`/favorites/${favoriteId}/`, headers || this.getAuthHeaders());
   }

@@ -13,6 +13,14 @@
         >
           {{ isCreatingRoute ? 'Cancelar ruta' : 'Crear mi ruta' }}
         </button>
+
+        <button
+          class="route-mode-btn location-btn"
+          *ngIf="userLocation"
+          (click)="centrarMiUbicacion()"
+        >
+          📍 Mi ubicación
+        </button>
       </div>
     </div>
 
@@ -62,7 +70,8 @@
       <app-leaflet-map
         [pois]="filteredPois"
         [userLocation]="userLocation"
-        (poiClicked)="abrirPoiModal($event)">
+        (poiClicked)="abrirPoiModal($event)"
+      >
       </app-leaflet-map>
     </div>
 
@@ -97,6 +106,7 @@
         <button class="preview-btn secondary" (click)="limpiarRutaPersonalizada()">
           Limpiar
         </button>
+
         <button class="preview-btn primary" (click)="finalizarRuta()">
           Finalizar
         </button>
@@ -104,7 +114,7 @@
     </div>
 
     <div class="poi-preview" *ngIf="selectedPoi && !isCreatingRoute">
-      <img [src]="selectedPoi.image" [alt]="selectedPoi.name">
+      <img [src]="selectedPoi.image" [alt]="selectedPoi.name" />
 
       <div class="info">
         <h3>{{ selectedPoi.name }}</h3>
@@ -119,6 +129,7 @@
           <button class="preview-btn secondary" (click)="cerrarPreview()">
             Cerrar
           </button>
+
           <button class="preview-btn primary" (click)="abrirDetalleCompleto(selectedPoi, $event)">
             Ver más
           </button>

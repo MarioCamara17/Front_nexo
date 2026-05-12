@@ -28,9 +28,11 @@ export class LeafletMapComponent implements OnInit, OnChanges {
   @Output() poiClicked = new EventEmitter<Poi>();
 
   map: L.Map | undefined;
+
   private markers: L.Marker[] = [];
   private userLocationMarker: L.CircleMarker | null = null;
   private userLocationCircle: L.Circle | null = null;
+  private hasCenteredOnUser = false;
 
   mapInitialized = false;
 
@@ -151,15 +153,15 @@ export class LeafletMapComponent implements OnInit, OnChanges {
     }
 
     this.userLocationCircle = L.circle([lat, lng], {
-      radius: 60,
+      radius: 80,
       color: '#2563eb',
       fillColor: '#60a5fa',
-      fillOpacity: 0.15,
-      weight: 1
+      fillOpacity: 0.18,
+      weight: 2
     }).addTo(this.map);
 
     this.userLocationMarker = L.circleMarker([lat, lng], {
-      radius: 8,
+      radius: 9,
       color: '#ffffff',
       weight: 3,
       fillColor: '#2563eb',
@@ -170,6 +172,14 @@ export class LeafletMapComponent implements OnInit, OnChanges {
       direction: 'top',
       offset: [0, -10]
     });
+
+    if (!this.hasCenteredOnUser) {
+      this.map.setView([lat, lng], 14, {
+        animate: true
+      });
+
+      this.hasCenteredOnUser = true;
+    }
   }
 
   centrarEnUbicacionActual() {

@@ -1,21 +1,23 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { User } from 'src/app/models/user.model';
 import { ApiService } from '../api/api.service';
-import { switchMap, distinctUntilChanged } from 'rxjs/operators';
+import { switchMap, distinctUntilChanged, tap } from 'rxjs/operators';
+import { environment } from 'src/environments/environment';
 
 interface BackendUser {
-  id: number;
+  id: string | number;
   first_name: string;
   last_name: string;
   email: string;
+  avatar?: string;
+  description?: string;
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class UserService {
-  private keyPrefix = 'user_';
   private backendKey = 'backendUser';
   private userSubject: BehaviorSubject<User>;
   private currentUser: User;
@@ -25,37 +27,42 @@ export class UserService {
     this.userSubject = new BehaviorSubject<User>(this.currentUser);
   }
 
-  private getCurrentEmail(): string {
-    const backendUser = this.getBackendUser();
-    return backendUser?.email || '';
-  }
+  private normalizeAvatarUrl(avatar?: string): string {
+    if (!avatar) {
+      return '';
+    }
 
-  private getLocalKey(email: string): string {
-    return this.keyPrefix + email;
-  }
+    if (avatar.startsWith('http://') || avatar.startsWith('https://')) {
+      return avatar;
+    }
 
-  private loadUser(): User {
-    const backendUser = this.getBackendUser();
-    const email = backendUser?.email || '';
-    const localUser = email ? this.getLocalUser(email) : { avatar: '', description: '' };
-    return {
-      id: backendUser?.id,
-      first_name: backendUser?.first_name || '',
-      last_name: backendUser?.last_name || '',
-      email,
-      avatar: localUser.avatar || '',
-      description: localUser.description || ''
-    };
-  }
+    if (avatar.startsWith('/media/')) {
+      return `${environment.apiUrl}${avatar}`;
+    }
 
-  private getLocalUser(email: string): { avatar: string; description: string } {
-    const userInfo = localStorage.getItem(this.getLocalKey(email));
-    return userInfo ? JSON.parse(userInfo) : { avatar: '', description: '' };
+    if (avatar.startsWith('media/')) {
+      return `${environment.apiUrl}/${avatar}`;
+    }
+
+    return avatar;
   }
 
   private getBackendUser(): BackendUser | null {
     const backendUser = localStorage.getItem(this.backendKey);
     return backendUser ? JSON.parse(backendUser) : null;
+  }
+
+  private loadUser(): User {
+    const backendUser = this.getBackendUser();
+
+    return {
+      id: backendUser?.id,
+      first_name: backendUser?.first_name || '',
+      last_name: backendUser?.last_name || '',
+      email: backendUser?.email || '',
+      avatar: this.normalizeAvatarUrl(backendUser?.avatar),
+      description: backendUser?.description || ''
+    };
   }
 
   private updateCurrentUser(user: User) {
@@ -71,7 +78,7 @@ export class UserService {
 
   getUser(): Observable<User> {
     return this.userSubject.asObservable().pipe(
-      distinctUntilChanged((prev, curr) => 
+      distinctUntilChanged((prev, curr) =>
         prev.id === curr.id &&
         prev.first_name === curr.first_name &&
         prev.last_name === curr.last_name &&
@@ -82,46 +89,49 @@ export class UserService {
     );
   }
 
-  getCurrentUserId(): number | null {
+  getCurrentUserId(): string | number | null {
     return this.currentUser?.id || null;
   }
 
-  setUser(user: User): Observable<User> {
-    if (!user.email) {
-      return this.getUser();
-    }
-
-      const localUser = { avatar: user.avatar, description: user.description };
-      localStorage.setItem(this.getLocalKey(user.email), JSON.stringify(localUser));
-
-      if (user.first_name || user.last_name) {
-        return this.updateUserName(user.first_name, user.last_name).pipe(
-          switchMap(() => {
-          const updatedUser = this.loadUser();
-          this.updateCurrentUser(updatedUser);
-            return this.getUser();
-          })
-        );
-      }
-
-    const updatedUser = this.loadUser();
-    this.updateCurrentUser(updatedUser);
-    return this.getUser();
+  refreshUserFromBackend(): Observable<User> {
+    return this.apiService.getUserDetail<BackendUser>().pipe(
+      tap((backendUser) => {
+        this.setBackendUser(backendUser);
+      }),
+      switchMap(() => this.getUser())
+    );
   }
 
-  updateUserName(first_name: string, last_name: string): Observable<any> {
-    return this.apiService.patchData('/auth/user-detail/', { first_name, last_name }).pipe(
-      switchMap(() => {
-        const backendUser = this.getBackendUser();
-        if (backendUser) {
-          backendUser.first_name = first_name;
-          backendUser.last_name = last_name;
-          localStorage.setItem(this.backendKey, JSON.stringify(backendUser));
-        }
-        const updatedUser = this.loadUser();
-        this.updateCurrentUser(updatedUser);
-        return of(true);
-      })
+  setUser(user: User): Observable<User> {
+    return this.updateUserProfile({
+      first_name: user.first_name,
+      last_name: user.last_name,
+      description: user.description || ''
+    });
+  }
+
+  updateUserName(first_name: string, last_name: string): Observable<User> {
+    return this.updateUserProfile({ first_name, last_name });
+  }
+
+  updateUserProfile(data: Partial<User>): Observable<User> {
+    return this.apiService.patchData<BackendUser>('/auth/user-detail/', data).pipe(
+      tap((backendUser) => {
+        this.setBackendUser(backendUser);
+      }),
+      switchMap(() => this.getUser())
+    );
+  }
+
+  updateAvatar(file: File): Observable<User> {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    return this.apiService.patchFormData<BackendUser>('/auth/user-detail/', formData).pipe(
+      tap((backendUser) => {
+        this.setBackendUser(backendUser);
+      }),
+      switchMap(() => this.getUser())
     );
   }
 }

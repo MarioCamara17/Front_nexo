@@ -12,48 +12,50 @@
       </div>
     </div>
 
-    <!-- TARJETA DE PUNTOS DINÁMICA -->
-    <div class="points-card">
-      <div class="points-top">
-        <div>
-          <h2>⭐ Tus puntos</h2>
-          <p class="points">{{ userPoints }} pts</p>
-        </div>
+    <!-- TARJETA DE PUNTOS REAL DESDE BACKEND -->
+    <ng-container *ngIf="gamificationProfile$ | async as gamification">
+      <div class="points-card">
+        <div class="points-top">
+          <div>
+            <h2>⭐ Tus puntos</h2>
+            <p class="points">{{ gamification.points }} pts</p>
+          </div>
 
-        <div class="badge-pill">
-          {{ currentLevel.name }}
-        </div>
-      </div>
-
-      <div class="progress-block">
-        <div class="progress-label">
-          <span *ngIf="nextLevel">
-            Progreso hacia {{ nextLevel.name }}
-          </span>
-
-          <span *ngIf="!nextLevel">
-            Nivel máximo alcanzado
-          </span>
-
-          <span *ngIf="nextLevel">
-            {{ pointsToNextLevel }} pts restantes
-          </span>
-
-          <span *ngIf="!nextLevel">
-            Completado
-          </span>
-        </div>
-
-        <div class="progress-bar">
-          <div
-            class="progress-fill"
-            [style.width.%]="progressPercent">
+          <div class="badge-pill">
+            {{ gamification.level }}
           </div>
         </div>
-      </div>
 
-      <small>Sigue explorando lugares para desbloquear nuevas recompensas.</small>
-    </div>
+        <div class="progress-block">
+          <div class="progress-label">
+            <span *ngIf="gamification.next_level_points">
+              Progreso hacia el siguiente nivel
+            </span>
+
+            <span *ngIf="!gamification.next_level_points">
+              Nivel máximo alcanzado
+            </span>
+
+            <span *ngIf="gamification.next_level_points">
+              {{ gamification.points_to_next_level }} pts restantes
+            </span>
+
+            <span *ngIf="!gamification.next_level_points">
+              Completado
+            </span>
+          </div>
+
+          <div class="progress-bar">
+            <div
+              class="progress-fill"
+              [style.width.%]="gamification.progress_percent">
+            </div>
+          </div>
+        </div>
+
+        <small>Sigue explorando lugares para desbloquear nuevas recompensas.</small>
+      </div>
+    </ng-container>
 
     <div class="section">
       <div class="section-header">

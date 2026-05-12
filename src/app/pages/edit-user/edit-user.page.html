@@ -1,63 +1,83 @@
-<div class="user-info">
-  <div class="user-avatar">
-    <ion-avatar>
-      <img
-        [src]="form.value.avatar || '../../../assets/icon/default-avatar.svg'"
+<ion-content [fullscreen]="true">
+  <div class="user-info">
+    <div class="user-avatar">
+      <ion-avatar>
+        <img
+          [src]="avatarPreview || '../../../assets/icon/default-avatar.svg'"
+          alt="Foto de perfil"
+        />
+      </ion-avatar>
+    </div>
+
+    <div class="button-container">
+      <ion-button (click)="avatarInput.click()" [disabled]="isSaving">
+        Cambiar foto
+      </ion-button>
+
+      <input
+        #avatarInput
+        type="file"
+        accept="image/*"
+        hidden
+        (change)="onAvatarSelected($event)"
       />
-    </ion-avatar>
+    </div>
+
+    <div class="user-edit-info">
+      <form [formGroup]="form">
+        <h2>Nombre</h2>
+        <ion-input
+          (ionInput)="onInputFilter($event, 'first_name')"
+          (keydown.enter)="$event.preventDefault()"
+          counter="50"
+          maxlength="50"
+          formControlName="first_name"
+          fill="outline"
+          autofocus="true"
+          placeholder="Ingresa tu nombre"
+          required="true"
+          errorText="El nombre es muy corto"
+          #input
+        >
+        </ion-input>
+
+        <h2>Apellido</h2>
+        <ion-input
+          (ionInput)="onInputFilter($event, 'last_name')"
+          (keydown.enter)="$event.preventDefault()"
+          counter="50"
+          maxlength="50"
+          formControlName="last_name"
+          fill="outline"
+          placeholder="Ingresa tu apellido"
+          required="true"
+          errorText="El apellido es muy corto"
+        >
+        </ion-input>
+
+        <h2>Sobre mí</h2>
+        <ion-textarea
+          (ionInput)="onInputFilter($event, 'description')"
+          (keydown.enter)="$event.preventDefault()"
+          counter="300"
+          maxlength="300"
+          formControlName="description"
+          fill="outline"
+          auto-grow="true"
+          placeholder="Escribe algo sobre ti..."
+        ></ion-textarea>
+
+        <div class="save-button">
+          <ion-button
+            expand="block"
+            (click)="formSubmit()"
+            type="button"
+            [disabled]="isSaving || form.disabled"
+          >
+            {{ isSaving ? 'Guardando...' : 'Guardar' }}
+          </ion-button>
+        </div>
+      </form>
+    </div>
   </div>
-
-  <div class="button-container">
-    <ion-button (click)="openCamera()"> Cambiar foto </ion-button>
-  </div>
-
-  <div class="user-edit-info">
-    <form [formGroup]="form">
-      <h2>Nombre</h2>
-      <ion-input
-        (ionInput)="onInputFilter($event, 'first_name')"
-        (keydown.enter)="$event.preventDefault()"
-        counter="50"
-        maxlength="50"
-        formControlName="first_name"
-        fill="outline"
-        autofocus="true"
-        placeholder="Ingresa tu nombre"
-        required="true"
-        errorText="El nombre es muy corto"
-        #input
-      >
-      </ion-input>
-
-      <h2>Apellido</h2>
-      <ion-input
-        (ionInput)="onInputFilter($event, 'last_name')"
-        (keydown.enter)="$event.preventDefault()"
-        counter="50"
-        maxlength="50"
-        formControlName="last_name"
-        fill="outline"
-        placeholder="Ingresa tu apellido"
-        required="true"
-        errorText="El apellido es muy corto"
-      >
-      </ion-input>
-
-      <h2>Sobre mi</h2>
-      <ion-textarea
-        (ionInput)="onInputFilter($event, 'description')"
-        (keydown.enter)="$event.preventDefault()"
-        counter="300"
-        maxlength="300"
-        formControlName="description"
-        fill="outline"
-        auto-grow="true"
-        placeholder="Escribe algo sobre ti..."
-      ></ion-textarea>
-
-      <div class="save-button">
-        <ion-button expand="block" (click)="formSubmit()" type="button" [disabled]="form.disabled">Guardar</ion-button>
-      </div>
-    </form>
-  </div>
-</div>
+</ion-content>

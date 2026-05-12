@@ -1,10 +1,18 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
-import { map, tap, catchError, finalize, delay, switchMap } from 'rxjs/operators';
+import {
+  map,
+  tap,
+  catchError,
+  finalize,
+  delay,
+  switchMap,
+} from 'rxjs/operators';
 import { ApiService } from '../api/api.service';
 import { HttpHeaders } from '@angular/common/http';
 import { UserService } from '../user/user.service';
 import { ToastController } from '@ionic/angular/standalone';
+import { GamificationService } from '../gamification/gamification.service';
 
 interface FavoriteResponse {
   id: string;
@@ -18,7 +26,7 @@ interface ApiResponse {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class FavoritesService {
   private favoriteList = new BehaviorSubject<string[]>([]);
@@ -26,13 +34,14 @@ export class FavoritesService {
   private isLoading = false;
   private pendingOperations = new Map<string, boolean>(); // Map para rastrear operaciones pendientes
   private retryCount = new Map<string, number>(); // Map para rastrear intentos de operación
-  private operationQueue: {placeId: string, isAdd: boolean}[] = []; // Cola de operaciones
+  private operationQueue: { placeId: string; isAdd: boolean }[] = []; // Cola de operaciones
   private isProcessingQueue = false;
 
   constructor(
     private apiService: ApiService,
     private userService: UserService,
-    private toastController: ToastController
+    private toastController: ToastController,
+    private gamificationService: GamificationService,
   ) {
     this.loadFavorites();
   }
@@ -49,66 +58,76 @@ export class FavoritesService {
 
     this.isLoading = true;
     const headers = this.getAuthHeaders();
-    this.apiService.getFavorites<any>(headers).pipe(
-      map(response => {
-        // Manejar diferentes estructuras de respuesta
-        if (Array.isArray(response)) {
-          // La respuesta es un array directo
-          return response;
-        } else if (response && response.results) {
-          // La respuesta tiene un formato paginado
-          return response.results;
-        } else {
-          console.error('Formato de respuesta desconocido:', response);
-          return [];
-  }
-      }),
-      finalize(() => {
-        this.isLoading = false;
-      })
-    ).subscribe({
-      next: (favorites) => {
-        if (!Array.isArray(favorites)) {
-          console.error('La respuesta no es un array:', favorites);
+    this.apiService
+      .getFavorites<any>(headers)
+      .pipe(
+        map((response) => {
+          // Manejar diferentes estructuras de respuesta
+          if (Array.isArray(response)) {
+            // La respuesta es un array directo
+            return response;
+          } else if (response && response.results) {
+            // La respuesta tiene un formato paginado
+            return response.results;
+          } else {
+            console.error('Formato de respuesta desconocido:', response);
+            return [];
+          }
+        }),
+        finalize(() => {
+          this.isLoading = false;
+        }),
+      )
+      .subscribe({
+        next: (favorites) => {
+          if (!Array.isArray(favorites)) {
+            console.error('La respuesta no es un array:', favorites);
+            this.favoriteList.next([]);
+            return;
+          }
+
+          // Extraer los IDs de los lugares de los favoritos
+          const placeIds = favorites
+            .map((f) => {
+              // Manejar diferentes formatos de place (string o objeto)
+              if (typeof f.place === 'string') {
+                return f.place;
+              } else if (f.place && f.place.id) {
+                return f.place.id;
+              }
+              return null;
+            })
+            .filter((id) => id !== null) as string[];
+
+          // Actualizar el mapa de favoritos
+          this.favoriteMap.clear();
+          favorites.forEach((f) => {
+            const placeId =
+              typeof f.place === 'string'
+                ? f.place
+                : f.place && f.place.id
+                  ? f.place.id
+                  : null;
+            if (placeId) {
+              this.favoriteMap.set(placeId, f.id.toString());
+            }
+          });
+
+          this.favoriteList.next(placeIds);
+
+          // Limpiar operaciones pendientes
+          this.pendingOperations.clear();
+          this.retryCount.clear();
+
+          // Procesar la cola de operaciones pendientes
+          this.processQueue();
+        },
+        error: (error) => {
+          console.error('Error loading favorites:', error);
           this.favoriteList.next([]);
-          return;
-        }
-
-        // Extraer los IDs de los lugares de los favoritos
-        const placeIds = favorites.map(f => {
-          // Manejar diferentes formatos de place (string o objeto)
-          if (typeof f.place === 'string') {
-            return f.place;
-          } else if (f.place && f.place.id) {
-            return f.place.id;
-          }
-          return null;
-        }).filter(id => id !== null) as string[];
-
-        // Actualizar el mapa de favoritos
-        this.favoriteMap.clear();
-        favorites.forEach(f => {
-          const placeId = typeof f.place === 'string' ? f.place : (f.place && f.place.id ? f.place.id : null);
-          if (placeId) {
-            this.favoriteMap.set(placeId, f.id.toString());
-          }
-        });
-        
-        this.favoriteList.next(placeIds);
-        
-        // Limpiar operaciones pendientes
-        this.pendingOperations.clear();
-        this.retryCount.clear();
-        
-        // Procesar la cola de operaciones pendientes
-        this.processQueue();
-      },
-      error: (error) => {
-        console.error('Error loading favorites:', error);
-        this.favoriteList.next([]);
-        this.isLoading = false;
-      }
-    });
+          this.isLoading = false;
+        },
+      });
   }
 
   getFavorites(): Observable<string[]> {
@@ -124,32 +143,37 @@ export class FavoritesService {
     if (this.isProcessingQueue || this.operationQueue.length === 0) {
       return;
     }
-    
+
     this.isProcessingQueue = true;
     const operation = this.operationQueue.shift();
-    
+
     if (!operation) {
       this.isProcessingQueue = false;
       return;
     }
-    
+
     const { placeId, isAdd } = operation;
-    
-    const action = isAdd ? 
-      this.performAddFavorite(placeId) : 
-      this.performRemoveFavorite(placeId);
-    
+
+    const action = isAdd
+      ? this.performAddFavorite(placeId)
+      : this.performRemoveFavorite(placeId);
+
     action.subscribe({
       next: () => {
-        console.log(`Operación ${isAdd ? 'añadir' : 'eliminar'} completada para ${placeId}`);
+        console.log(
+          `Operación ${isAdd ? 'añadir' : 'eliminar'} completada para ${placeId}`,
+        );
         this.isProcessingQueue = false;
         this.processQueue(); // Procesar la siguiente operación
       },
       error: (error) => {
-        console.error(`Error en operación ${isAdd ? 'añadir' : 'eliminar'} para ${placeId}:`, error);
+        console.error(
+          `Error en operación ${isAdd ? 'añadir' : 'eliminar'} para ${placeId}:`,
+          error,
+        );
         this.isProcessingQueue = false;
         this.processQueue(); // Continuar con la siguiente operación
-      }
+      },
     });
   }
 
@@ -159,15 +183,15 @@ export class FavoritesService {
     if (this.isFavorite(placeId)) {
       return of(true);
     }
-    
+
     // Añadir a la cola de operaciones
     this.operationQueue.push({ placeId, isAdd: true });
-    
+
     // Iniciar procesamiento si no está en curso
     if (!this.isProcessingQueue) {
       this.processQueue();
     }
-    
+
     return of(true);
   }
 
@@ -181,7 +205,7 @@ export class FavoritesService {
 
     // Marcar como operación pendiente
     this.pendingOperations.set(placeId, true);
-    
+
     // Si ya está en favoritos, no hacemos nada
     if (this.isFavorite(placeId)) {
       this.pendingOperations.delete(placeId);
@@ -192,54 +216,67 @@ export class FavoritesService {
     if (!userId) {
       console.error('No se pudo obtener el ID del usuario');
       this.pendingOperations.delete(placeId);
-      return throwError(() => new Error('No se pudo obtener el ID del usuario'));
+      return throwError(
+        () => new Error('No se pudo obtener el ID del usuario'),
+      );
     }
 
     const headers = this.getAuthHeaders();
-    return this.apiService.addFavorite<any>({
-      place: placeId,
-      user: userId
-    }, headers).pipe(
-      tap(response => {
-        if (response && response.id) {
-          const currentFavorites = this.favoriteList.value;
-          
-          // Extraer el ID del lugar correctamente
-          let responseId: string;
-          if (typeof response.place === 'string') {
-            responseId = response.place;
-          } else if (response.place && response.place.id) {
-            responseId = response.place.id;
-          } else {
-            responseId = placeId; // Usar el ID original si no se puede extraer
+    return this.apiService
+      .addFavorite<any>(
+        {
+          place: placeId,
+          user: userId,
+        },
+        headers,
+      )
+      .pipe(
+        tap((response) => {
+          if (response && response.id) {
+            const currentFavorites = this.favoriteList.value;
+
+            // Extraer el ID del lugar correctamente
+            let responseId: string;
+            if (typeof response.place === 'string') {
+              responseId = response.place;
+            } else if (response.place && response.place.id) {
+              responseId = response.place.id;
+            } else {
+              responseId = placeId; // Usar el ID original si no se puede extraer
+            }
+
+            this.favoriteMap.set(responseId, response.id.toString());
+            if (!currentFavorites.includes(responseId)) {
+              this.favoriteList.next([...currentFavorites, responseId]);
+            }
+
+            // Mostrar un mensaje de éxito
+            this.showToast('Lugar añadido a favoritos');
+            this.gamificationService
+              .awardPoints('favorite_place', responseId)
+              .subscribe({
+                error: (error) =>
+                  console.error('Error al otorgar puntos por favorito:', error),
+              });
           }
-          
-          this.favoriteMap.set(responseId, response.id.toString());
-          if (!currentFavorites.includes(responseId)) {
-            this.favoriteList.next([...currentFavorites, responseId]);
-    }
-          
-          // Mostrar un mensaje de éxito
-          this.showToast('Lugar añadido a favoritos');
-        }
-      }),
-      map(() => true),
-      catchError(error => {
-        console.error('Error adding favorite:', error);
-        // Recargar favoritos para asegurarnos de tener la información más actualizada
-        this.loadFavorites();
-        
-        // Mostrar mensaje de error
-        this.showToast('Error al añadir favorito. Reintentando...');
-        return of(false);
-      }),
-      finalize(() => {
-        // Limpiar la operación pendiente al finalizar
-        setTimeout(() => {
-          this.pendingOperations.delete(placeId);
-        }, 500);
-      })
-    );
+        }),
+        map(() => true),
+        catchError((error) => {
+          console.error('Error adding favorite:', error);
+          // Recargar favoritos para asegurarnos de tener la información más actualizada
+          this.loadFavorites();
+
+          // Mostrar mensaje de error
+          this.showToast('Error al añadir favorito. Reintentando...');
+          return of(false);
+        }),
+        finalize(() => {
+          // Limpiar la operación pendiente al finalizar
+          setTimeout(() => {
+            this.pendingOperations.delete(placeId);
+          }, 500);
+        }),
+      );
   }
 
   // Método público para eliminar favorito (añade a la cola)
@@ -248,15 +285,15 @@ export class FavoritesService {
     if (!this.isFavorite(placeId)) {
       return of(true);
     }
-    
+
     // Añadir a la cola de operaciones
     this.operationQueue.push({ placeId, isAdd: false });
-    
+
     // Iniciar procesamiento si no está en curso
     if (!this.isProcessingQueue) {
       this.processQueue();
     }
-    
+
     return of(true);
   }
 
@@ -281,17 +318,17 @@ export class FavoritesService {
       tap(() => {
         const currentFavorites = this.favoriteList.value;
         this.favoriteMap.delete(placeId);
-        this.favoriteList.next(currentFavorites.filter(id => id !== placeId));
-        
+        this.favoriteList.next(currentFavorites.filter((id) => id !== placeId));
+
         // Mostrar mensaje de éxito
         this.showToast('Lugar eliminado de favoritos');
       }),
       map(() => true),
-      catchError(error => {
+      catchError((error) => {
         console.error('Error removing favorite:', error);
         // Recargar favoritos para asegurarnos de tener la información más actualizada
         this.loadFavorites();
-        
+
         // Mostrar mensaje de error
         this.showToast('Error al eliminar favorito. Reintentando...');
         return of(false);
@@ -301,7 +338,7 @@ export class FavoritesService {
         setTimeout(() => {
           this.pendingOperations.delete(placeId);
         }, 500);
-      })
+      }),
     );
   }
 
@@ -317,9 +354,9 @@ export class FavoritesService {
       return of(true);
     }
 
-    return this.isFavorite(placeId) ? 
-      this.removeFavorite(placeId) : 
-      this.addFavorite(placeId);
+    return this.isFavorite(placeId)
+      ? this.removeFavorite(placeId)
+      : this.addFavorite(placeId);
   }
 
   refresh() {
@@ -331,7 +368,7 @@ export class FavoritesService {
       message,
       duration: 2000,
       position: 'bottom',
-      color: 'medium'
+      color: 'medium',
     });
     toast.present();
   }

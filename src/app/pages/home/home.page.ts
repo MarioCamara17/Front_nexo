@@ -15,7 +15,10 @@ import { PoiCardComponent } from '../../components/poi-card/poi-card.component';
 import { PoiService } from 'src/app/services/poi/poi.service';
 import { FavoritesService } from 'src/app/services/favorites/favorites.service';
 import { AuthService } from 'src/app/services/auth/auth.service';
-import { GamificationService } from 'src/app/services/gamification/gamification.service';
+import {
+  GamificationService,
+  GamificationProfile
+} from 'src/app/services/gamification/gamification.service';
 import { Poi } from 'src/app/models/poi.model';
 import { PoiModalComponent } from 'src/app/components/poi-modal/poi-modal.component';
 
@@ -39,6 +42,9 @@ import { PoiModalComponent } from 'src/app/components/poi-modal/poi-modal.compon
 export class HomePage implements OnInit, OnDestroy {
   poiList: Poi[] = [];
   isLoading = false;
+
+  gamificationProfile$ = this.gamificationService.profile$;
+
   private subscriptions: Subscription[] = [];
 
   constructor(
@@ -49,34 +55,16 @@ export class HomePage implements OnInit, OnDestroy {
     private gamificationService: GamificationService
   ) {}
 
-  get userPoints(): number {
-    return this.gamificationService.getUserPoints();
-  }
-
-  get currentLevel() {
-    return this.gamificationService.getCurrentLevel();
-  }
-
-  get nextLevel() {
-    return this.gamificationService.getNextLevel();
-  }
-
-  get pointsToNextLevel(): number {
-    return this.gamificationService.getPointsToNextLevel();
-  }
-
-  get progressPercent(): number {
-    return this.gamificationService.getProgressPercent();
-  }
-
   ngOnInit() {
     this.loadPois();
+    this.loadGamification();
 
     this.subscriptions.push(
       this.authService.isAuthenticated$.subscribe((isAuthenticated: boolean) => {
         if (isAuthenticated) {
-          console.log('Usuario autenticado, recargando POIs');
+          console.log('Usuario autenticado, recargando POIs y gamificación');
           this.loadPois();
+          this.loadGamification();
         }
       })
     );
@@ -94,6 +82,7 @@ export class HomePage implements OnInit, OnDestroy {
     if (this.authService.isLoggedIn()) {
       this.favoritesService.refresh();
       this.loadPois();
+      this.loadGamification();
     }
   }
 
@@ -116,13 +105,30 @@ export class HomePage implements OnInit, OnDestroy {
     });
   }
 
+  loadGamification() {
+    this.gamificationService.loadProfile().subscribe({
+      error: (error: unknown) => {
+        console.error('Error al cargar gamificación:', error);
+      }
+    });
+  }
+
   doRefresh(event: any) {
     this.favoritesService.refresh();
 
     this.poiService.getAll().subscribe({
       next: (pois: Poi[]) => {
         this.poiList = pois;
-        event.target.complete();
+
+        this.gamificationService.loadProfile().subscribe({
+          next: () => {
+            event.target.complete();
+          },
+          error: (error: unknown) => {
+            console.error('Error al recargar gamificación:', error);
+            event.target.complete();
+          }
+        });
       },
       error: (error: unknown) => {
         console.error('Error al recargar POIs:', error);
@@ -157,9 +163,42 @@ export class HomePage implements OnInit, OnDestroy {
 
       if (data && data.refresh) {
         this.loadPois();
+        this.loadGamification();
       }
     } catch (error) {
       console.error('Error al abrir el modal:', error);
     }
+  }
+
+  getLevelText(profile: GamificationProfile): string {
+    return profile.level || 'Visitante inicial';
+  }
+
+  getProgressLabel(profile: GamificationProfile): string {
+    if (profile.next_level_points === null) {
+      return 'Nivel máximo alcanzado';
+    }
+
+    return `Progreso hacia ${this.getNextLevelName(profile.points)}`;
+  }
+
+  getNextLevelName(points: number): string {
+    if (points < 100) {
+      return 'Explorador novato';
+    }
+
+    if (points < 300) {
+      return 'Rastreador cultural';
+    }
+
+    if (points < 600) {
+      return 'Guía regional';
+    }
+
+    if (points < 1000) {
+      return 'Maestro explorador';
+    }
+
+    return 'Nivel máximo';
   }
 }

@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild, OnDestroy } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
   FormGroup,
@@ -11,12 +11,12 @@ import {
   IonButton,
   IonInput,
   IonTextarea,
+  IonContent,
 } from '@ionic/angular/standalone';
 import { User } from 'src/app/models/user.model';
 import { UserService } from 'src/app/services/user/user.service';
-import { Observable, Subscription } from 'rxjs';
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { first } from 'rxjs/operators';
+import { Observable, Subscription, of } from 'rxjs';
+import { first, switchMap } from 'rxjs/operators';
 import { Router, NavigationEnd } from '@angular/router';
 
 @Component({
@@ -28,6 +28,7 @@ import { Router, NavigationEnd } from '@angular/router';
     CommonModule,
     ReactiveFormsModule,
     FormsModule,
+    IonContent,
     IonAvatar,
     IonButton,
     IonInput,
@@ -39,21 +40,87 @@ export class EditUserPage implements OnInit, OnDestroy {
 
   form: FormGroup;
   user$: Observable<User>;
-  userEmail: string = '';
-  originalUser: any = {};
-  private userSubscription!: Subscription;
-  private routerSubscription!: Subscription;
-  isSaving: boolean = false;
-  isNavigatingAway: boolean = false;
-  isInitialLoad: boolean = true;
 
-  ionViewDidEnter() {
+  userEmail = '';
+
+  originalUser: User = {
+    first_name: '',
+    last_name: '',
+    email: '',
+    avatar: '',
+    description: ''
+  };
+
+  private userSubscription?: Subscription;
+  private routerSubscription?: Subscription;
+
+  isSaving = false;
+  isNavigatingAway = false;
+  isInitialLoad = true;
+
+  selectedAvatarFile: File | null = null;
+  avatarPreview = '';
+
+  constructor(
+    private fb: FormBuilder,
+    private userService: UserService,
+    private router: Router
+  ) {
+    this.form = this.fb.group({
+      first_name: [''],
+      last_name: [''],
+      description: [''],
+    });
+
+    this.user$ = this.userService.getUser();
+  }
+
+  ionViewDidEnter(): void {
     setTimeout(() => {
-      this.input.setFocus();
+      this.input?.setFocus();
     }, 100);
   }
 
-  onInputFilter(event: CustomEvent, controlName: 'first_name' | 'last_name' | 'description') {
+  ngOnInit(): void {
+    this.isInitialLoad = true;
+
+    this.userSubscription = this.user$.pipe(first()).subscribe((user: User) => {
+      this.originalUser = { ...user };
+      this.userEmail = user.email;
+      this.avatarPreview = user.avatar || '';
+
+      this.form.patchValue(
+        {
+          first_name: user.first_name,
+          last_name: user.last_name,
+          description: user.description || ''
+        },
+        { emitEvent: false }
+      );
+
+      this.form.enable();
+
+      setTimeout(() => {
+        this.isInitialLoad = false;
+      }, 100);
+    });
+
+    this.routerSubscription = this.router.events.subscribe((event) => {
+      if (event instanceof NavigationEnd && !this.isSaving) {
+        this.isNavigatingAway = true;
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.userSubscription?.unsubscribe();
+    this.routerSubscription?.unsubscribe();
+  }
+
+  onInputFilter(
+    event: CustomEvent,
+    controlName: 'first_name' | 'last_name' | 'description'
+  ): void {
     const value = (event.target as HTMLIonInputElement).value ?? '';
 
     const patterns = {
@@ -64,58 +131,11 @@ export class EditUserPage implements OnInit, OnDestroy {
 
     const filteredValue = (value as string).replace(patterns[controlName], '');
 
-    if (this.isInitialLoad) return;
-    
+    if (this.isInitialLoad) {
+      return;
+    }
+
     this.form.get(controlName)?.setValue(filteredValue, { emitEvent: true });
-  }
-
-  constructor(
-    private fb: FormBuilder,
-    private userService: UserService,
-    private location: Location,
-    private router: Router
-  ) {
-    this.form = this.fb.group({
-      first_name: [''],
-      last_name: [''],
-      avatar: [''],
-      description: [''],
-    });
-
-    this.user$ = this.userService.getUser();
-  }
-
-  ngOnInit(): void {
-    this.isInitialLoad = true;
-    this.userSubscription = this.user$.pipe(first()).subscribe((user) => {
-      this.originalUser = { ...user };
-      this.form.patchValue({
-        first_name: user.first_name,
-        last_name: user.last_name,
-        avatar: user.avatar,
-        description: user.description
-      }, { emitEvent: false });
-      this.userEmail = user.email;
-      this.form.enable();
-      setTimeout(() => {
-        this.isInitialLoad = false;
-      }, 100);
-    });
-
-    this.routerSubscription = this.router.events.subscribe(event => {
-      if (event instanceof NavigationEnd && !this.isSaving) {
-        this.isNavigatingAway = true;
-      }
-    });
-  }
-
-  ngOnDestroy(): void {
-    if (this.userSubscription) {
-      this.userSubscription.unsubscribe();
-    }
-    if (this.routerSubscription) {
-      this.routerSubscription.unsubscribe();
-    }
   }
 
   goBack(): void {
@@ -125,24 +145,59 @@ export class EditUserPage implements OnInit, OnDestroy {
     }
   }
 
+  onAvatarSelected(event: Event): void {
+    if (this.isInitialLoad || this.isSaving) {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+
+    if (!input.files || input.files.length === 0) {
+      return;
+    }
+
+    const file = input.files[0];
+
+    if (!file.type.startsWith('image/')) {
+      console.error('El archivo seleccionado no es una imagen.');
+      input.value = '';
+      return;
+    }
+
+    this.selectedAvatarFile = file;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      this.avatarPreview = reader.result as string;
+    };
+
+    reader.readAsDataURL(file);
+
+    input.value = '';
+  }
+
   formSubmit(): void {
     if (this.isInitialLoad || this.isSaving) {
       return;
     }
 
-    const updatedUser = {
-      ...this.form.value,
+    const updatedUser: User = {
+      ...this.originalUser,
+      first_name: this.form.value.first_name,
+      last_name: this.form.value.last_name,
+      description: this.form.value.description || '',
       email: this.userEmail
     };
 
-    // Verificar si hay cambios reales comparando valores exactos
-    const hasChanges = 
+    const hasProfileChanges =
       updatedUser.first_name !== this.originalUser.first_name ||
       updatedUser.last_name !== this.originalUser.last_name ||
-      updatedUser.avatar !== this.originalUser.avatar ||
-      updatedUser.description !== this.originalUser.description;
+      updatedUser.description !== (this.originalUser.description || '');
 
-    if (!hasChanges) {
+    const hasAvatarChanges = this.selectedAvatarFile !== null;
+
+    if (!hasProfileChanges && !hasAvatarChanges) {
       this.goBack();
       return;
     }
@@ -150,52 +205,49 @@ export class EditUserPage implements OnInit, OnDestroy {
     this.isSaving = true;
     this.isNavigatingAway = false;
     this.form.disable();
-    this.save();
+
+    this.saveProfileAndAvatar(updatedUser, hasProfileChanges, hasAvatarChanges);
   }
 
-  save(): void {
-    if (!this.isSaving || this.isInitialLoad) {
-      return;
+  private saveProfileAndAvatar(
+    updatedUser: User,
+    hasProfileChanges: boolean,
+    hasAvatarChanges: boolean
+  ): void {
+    let request$: Observable<User | null>;
+
+    if (hasProfileChanges) {
+      request$ = this.userService.setUser(updatedUser);
+    } else {
+      request$ = of(null);
     }
 
-    const updatedUser = {
-      ...this.form.value,
-      email: this.userEmail
-    };
+    request$
+      .pipe(
+        switchMap((): Observable<User | null> => {
+          if (hasAvatarChanges && this.selectedAvatarFile) {
+            return this.userService.updateAvatar(this.selectedAvatarFile);
+          }
 
-    this.userService.setUser(updatedUser).subscribe({
-      next: (data) => {
-        this.isSaving = false;
-        this.isNavigatingAway = true;
-        this.router.navigate(['/profile']);
-      },
-      error: (error) => {
-        console.error('Error al actualizar usuario:', error);
-        this.isSaving = false;
-        this.isNavigatingAway = false;
-        this.form.enable();
-      }
-    });
-  }
-
-  async openCamera(): Promise<void> {
-    if (this.isInitialLoad) return;
-    
-    try {
-      const image = await Camera.getPhoto({
-        quality: 90,
-        allowEditing: false,
-        resultType: CameraResultType.DataUrl,
-        source: CameraSource.Camera,
+          return of(null);
+        }),
+        switchMap((): Observable<User> => {
+          return this.userService.refreshUserFromBackend();
+        })
+      )
+      .subscribe({
+        next: () => {
+          this.isSaving = false;
+          this.isNavigatingAway = true;
+          this.selectedAvatarFile = null;
+          this.router.navigate(['/profile']);
+        },
+        error: (error: unknown) => {
+          console.error('Error al actualizar usuario:', error);
+          this.isSaving = false;
+          this.isNavigatingAway = false;
+          this.form.enable();
+        }
       });
-
-      const base64Image = image.dataUrl;
-
-      this.form.patchValue({
-        avatar: base64Image,
-      });
-    } catch (error) {
-      console.error('Error al tomar la foto: ', error);
-    }
   }
 }

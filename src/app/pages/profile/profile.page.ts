@@ -1,203 +1,68 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonAvatar, IonButton, AlertController, IonContent } from '@ionic/angular/standalone';
+import {
+  IonAvatar,
+  IonButton,
+  AlertController,
+  IonContent
+} from '@ionic/angular/standalone';
 import { RouterModule } from '@angular/router';
+import { Observable, Subscription } from 'rxjs';
+
 import { User } from 'src/app/models/user.model';
 import { UserService } from 'src/app/services/user/user.service';
 import { AuthService } from '../../services/auth/auth.service';
-import { Subscription } from 'rxjs';
-
-
-interface UserLevel {
-  name: string;
-  minPoints: number;
-  maxPoints: number | null;
-}
-
-interface Badge {
-  icon: string;
-  name: string;
-  description: string;
-  unlocked: boolean;
-}
-
-interface Activity {
-  icon: string;
-  title: string;
-  points: number;
-  date: string;
-}
+import {
+  GamificationService,
+  GamificationProfile,
+  Activity
+} from 'src/app/services/gamification/gamification.service';
 
 @Component({
   selector: 'app-profile',
   templateUrl: './profile.page.html',
   styleUrls: ['./profile.page.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, IonContent, IonAvatar, IonButton, RouterModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    IonContent,
+    IonAvatar,
+    IonButton,
+    RouterModule
+  ],
 })
 export class ProfilePage implements OnInit, OnDestroy {
-  user: User = { first_name: '', last_name: '', email: '', avatar: '', description: '' };
+  user: User = {
+    first_name: '',
+    last_name: '',
+    email: '',
+    avatar: '',
+    description: ''
+  };
+
+  gamificationProfile$: Observable<GamificationProfile>;
+
   private userSubscription?: Subscription;
-
-  // Datos temporales de gamificación
-  visitedPlaces = 6;
-  favoritePlaces = 4;
-  completedRoutes = 2;
-  customRoutes = 1;
-  chatbotUses = 3;
-  arExperiences = 0;
-
-  levels: UserLevel[] = [
-    { name: 'Visitante inicial', minPoints: 0, maxPoints: 99 },
-    { name: 'Explorador novato', minPoints: 100, maxPoints: 299 },
-    { name: 'Rastreador cultural', minPoints: 300, maxPoints: 599 },
-    { name: 'Guía regional', minPoints: 600, maxPoints: 999 },
-    { name: 'Maestro explorador', minPoints: 1000, maxPoints: null }
-  ];
-
-  recentActivities: Activity[] = [
-    {
-      icon: '📍',
-      title: 'Visitaste Parque Museo La Venta',
-      points: 50,
-      date: 'Hoy'
-    },
-    {
-      icon: '🧭',
-      title: 'Creaste una ruta personalizada',
-      points: 30,
-      date: 'Hoy'
-    },
-    {
-      icon: '❤️',
-      title: 'Agregaste Casa de los Azulejos a favoritos',
-      points: 10,
-      date: 'Ayer'
-    },
-    {
-      icon: '💬',
-      title: 'Usaste el chatbot para pedir una recomendación',
-      points: 5,
-      date: 'Ayer'
-    }
-  ];
 
   constructor(
     private userService: UserService,
     private authService: AuthService,
-    private alertController: AlertController
-  ) {}
-
-  get userPoints(): number {
-    return (
-      this.visitedPlaces * 50 +
-      this.favoritePlaces * 10 +
-      this.completedRoutes * 150 +
-      this.customRoutes * 30 +
-      this.chatbotUses * 5 +
-      this.arExperiences * 80
-    );
-  }
-
-  get currentLevel(): UserLevel {
-    return this.levels.find(level => {
-      if (level.maxPoints === null) {
-        return this.userPoints >= level.minPoints;
-      }
-
-      return this.userPoints >= level.minPoints && this.userPoints <= level.maxPoints;
-    }) || this.levels[0];
-  }
-
-  get nextLevel(): UserLevel | null {
-    const currentIndex = this.levels.findIndex(level => level.name === this.currentLevel.name);
-    return this.levels[currentIndex + 1] || null;
-  }
-
-  get pointsToNextLevel(): number {
-    if (!this.nextLevel) {
-      return 0;
-    }
-
-    return Math.max(this.nextLevel.minPoints - this.userPoints, 0);
-  }
-
-  get progressPercent(): number {
-    if (!this.nextLevel) {
-      return 100;
-    }
-
-    const currentMin = this.currentLevel.minPoints;
-    const nextMin = this.nextLevel.minPoints;
-    const progress = ((this.userPoints - currentMin) / (nextMin - currentMin)) * 100;
-
-    return Math.min(Math.max(progress, 0), 100);
-  }
-
-  get badges(): Badge[] {
-    return [
-      {
-        icon: '📍',
-        name: 'Primer destino',
-        description: 'Marca tu primer lugar como visitado.',
-        unlocked: this.visitedPlaces >= 1
-      },
-      {
-        icon: '🌿',
-        name: 'Explorador natural',
-        description: 'Visita 3 lugares turísticos.',
-        unlocked: this.visitedPlaces >= 3
-      },
-      {
-        icon: '🧭',
-        name: 'Creador de rutas',
-        description: 'Crea tu primera ruta personalizada.',
-        unlocked: this.customRoutes >= 1
-      },
-      {
-        icon: '🏛️',
-        name: 'Guardián cultural',
-        description: 'Completa 2 rutas turísticas.',
-        unlocked: this.completedRoutes >= 2
-      },
-      {
-        icon: '💬',
-        name: 'Explorador asistido',
-        description: 'Usa el chatbot para recibir recomendaciones.',
-        unlocked: this.chatbotUses >= 1
-      },
-      {
-        icon: '🚆',
-        name: 'Viajero Tren Maya',
-        description: 'Consulta rutas relacionadas con el Tren Maya.',
-        unlocked: true
-      },
-      {
-        icon: '👓',
-        name: 'Explorador RA',
-        description: 'Visualiza una experiencia de realidad aumentada.',
-        unlocked: this.arExperiences >= 1
-      },
-      {
-        icon: '🏆',
-        name: 'Embajador de Tabasco',
-        description: 'Alcanza 1000 puntos dentro de NEXO.',
-        unlocked: this.userPoints >= 1000
-      }
-    ];
-  }
-
-  get unlockedBadgesCount(): number {
-    return this.badges.filter(badge => badge.unlocked).length;
-  }
-
-  ionViewWillEnter() {
-    this.loadUserData();
+    private alertController: AlertController,
+    private gamificationService: GamificationService
+  ) {
+    this.gamificationProfile$ = this.gamificationService.profile$;
   }
 
   ngOnInit() {
     this.loadUserData();
+    this.loadGamification();
+  }
+
+  ionViewWillEnter() {
+    this.loadUserData();
+    this.loadGamification();
   }
 
   ngOnDestroy() {
@@ -219,6 +84,37 @@ export class ProfilePage implements OnInit, OnDestroy {
         console.error('Error al cargar datos del usuario:', error);
       }
     });
+  }
+
+  private loadGamification() {
+    if (!this.authService.isLoggedIn()) {
+      return;
+    }
+
+    this.gamificationService.loadProfile().subscribe({
+      error: (error: unknown) => {
+        console.error('Error al cargar gamificación en Perfil:', error);
+      }
+    });
+  }
+
+  getActivityIcon(activity: Activity): string {
+    switch (activity.action) {
+      case 'visited_place':
+        return '📍';
+      case 'favorite_place':
+        return '❤️';
+      case 'custom_route':
+        return '🧭';
+      case 'completed_route':
+        return '🗺️';
+      case 'chatbot_use':
+        return '💬';
+      case 'ar_experience':
+        return '👓';
+      default:
+        return '⭐';
+    }
   }
 
   async logout() {
