@@ -1,23 +1,92 @@
-ion-content {
-  h2 {
-    margin-top: 10vh;
-    margin-left: 5vw;
-  }
-
-  p {
-    margin-left: 5vw;
-  }
+ion-content.favorites-content {
+  --background: #f5f7fa;
 }
 
-#favorites-container {
+.favorites-page {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 20px 115px;
+}
+
+.favorites-header {
+  margin-bottom: 24px;
+}
+
+.favorites-header h2 {
+  margin: 0;
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.favorites-header p {
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.favorites-list {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  padding: 2vh;
-  align-items: flex-end;
+  flex-direction: column;
+  gap: 22px;
 }
 
-#favorites-container strong {
-  font-size: 20px;
-  line-height: 26px;
+.favorite-card-item {
+  display: block;
+  width: 100%;
+}
+
+/* MENSAJE SIN FAVORITOS */
+.empty-favorites {
+  margin-top: 60px;
+  text-align: center;
+  color: #111827;
+  padding: 28px 20px;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.08);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  color: #0ea5e9;
+  margin-bottom: 10px;
+}
+
+.empty-favorites h3 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+}
+
+.empty-favorites p {
+  margin: 0 auto;
+  max-width: 360px;
+  font-size: 0.9rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+/* TABLET / ESCRITORIO */
+@media (min-width: 768px) {
+  .favorites-page {
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+
+  .favorites-list {
+    gap: 26px;
+  }
+}
+
+/* CELULARES PEQUEÑOS */
+@media (max-width: 380px) {
+  .favorites-page {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .favorites-header h2 {
+    font-size: 1.55rem;
+  }
 }

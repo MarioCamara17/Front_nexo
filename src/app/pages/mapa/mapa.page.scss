@@ -1,28 +1,41 @@
-ion-content {
-  --background: #f5f7fa;
-}
-
 :host {
   display: block;
   width: 100%;
   height: 100%;
 }
 
+ion-content.map-content {
+  --background: #f5f7fa;
+  --padding-top: 0;
+  --padding-bottom: 0;
+}
+
 .page-wrapper {
   position: relative;
   width: 100%;
   height: 100%;
+  overflow: hidden;
 }
 
-/* HEADER SUPERIOR */
+/* MAPA */
+.map-container {
+  position: absolute;
+  top: 82px;
+  left: 0;
+  right: 0;
+  bottom: 82px;
+  z-index: 1;
+}
+
+/* HEADER SUPERIOR DEL MAPA */
 .map-header {
   position: absolute;
-  top: 16px;
+  top: 92px;
   left: 16px;
   right: 16px;
   z-index: 1000;
 
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 14px;
   padding: 12px 14px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
@@ -47,28 +60,38 @@ ion-content {
   color: #b91c1c;
 }
 
+/* BOTONES DEL HEADER */
 .route-mode-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
   margin-top: 10px;
 }
 
 .route-mode-btn {
   border: none;
-  border-radius: 999px;
   padding: 8px 14px;
+  border-radius: 999px;
   font-size: 0.8rem;
-  cursor: pointer;
+  font-weight: 600;
   background: #0f766e;
   color: white;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.14);
+  cursor: pointer;
 }
 
 .route-mode-btn.active {
-  background: #b91c1c;
+  background: #dc2626;
+}
+
+.location-btn {
+  background: #2563eb;
 }
 
 /* FILTROS */
 .map-filters {
   position: absolute;
-  top: 130px;
+  top: 220px;
   left: 16px;
   right: 16px;
   z-index: 1000;
@@ -88,6 +111,7 @@ ion-content {
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
   white-space: nowrap;
   color: #374151;
+  cursor: pointer;
 }
 
 .filter.active {
@@ -95,58 +119,55 @@ ion-content {
   color: white;
 }
 
-/* MAPA */
-.map-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-}
-
-/* BUILDER DE RUTA */
+/* PANEL DE RUTA PERSONALIZADA */
 .route-builder {
   position: absolute;
-  bottom: 90px;
   left: 16px;
   right: 16px;
-  z-index: 1300;
+  bottom: 96px;
+  z-index: 1200;
 
-  background: rgba(255, 255, 255, 0.98);
-  border-radius: 16px;
-  padding: 14px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
-  max-height: 42%;
+  max-height: 24vh;
   overflow-y: auto;
+
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
 }
 
 .route-builder-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  margin-bottom: 4px;
 }
 
 .route-builder-header h3 {
   margin: 0;
-  font-size: 0.98rem;
+  font-size: 0.95rem;
   color: #111827;
 }
 
 .route-builder-header span {
   font-size: 0.76rem;
   color: #6b7280;
+  white-space: nowrap;
 }
 
-.route-builder-help {
-  margin: 8px 0 12px;
-  font-size: 0.76rem;
+.route-builder-help,
+.empty-route-text {
+  margin: 4px 0 8px;
+  font-size: 0.78rem;
   color: #6b7280;
 }
 
 .route-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .route-item {
@@ -155,21 +176,19 @@ ion-content {
   gap: 10px;
   background: #f8fafc;
   border-radius: 12px;
-  padding: 10px;
+  padding: 8px;
 }
 
 .route-order {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background: #0ea5e9;
+  background: #0f766e;
   color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
   font-weight: 700;
-  flex-shrink: 0;
 }
 
 .route-item-info {
@@ -179,39 +198,36 @@ ion-content {
 
 .route-item-info strong {
   display: block;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #111827;
 }
 
 .route-item-info span {
-  font-size: 0.74rem;
+  font-size: 0.7rem;
   color: #6b7280;
 }
 
 .remove-btn {
   border: none;
-  background: transparent;
+  background: #fee2e2;
   color: #b91c1c;
-  font-size: 1rem;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  font-weight: 700;
   cursor: pointer;
-}
-
-.empty-route-text {
-  font-size: 0.76rem;
-  color: #6b7280;
-  margin: 0 0 10px;
 }
 
 .route-builder-actions {
   display: flex;
   gap: 10px;
-  margin-top: 12px;
+  margin-top: 10px;
 }
 
 /* PREVIEW DEL POI */
 .poi-preview {
   position: absolute;
-  bottom: 90px;
+  bottom: 96px;
   left: 16px;
   right: 16px;
   z-index: 1200;
@@ -220,7 +236,7 @@ ion-content {
   gap: 12px;
   align-items: flex-start;
 
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(255, 255, 255, 0.96);
   border-radius: 16px;
   padding: 12px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
@@ -285,7 +301,25 @@ ion-content {
   color: #374151;
 }
 
-.location-btn {
-  background: #2563eb;
-  color: white;
+/* RESPONSIVE */
+@media (max-width: 600px) {
+  .map-header {
+    top: 90px;
+    left: 12px;
+    right: 12px;
+    padding: 10px 12px;
+  }
+
+  .map-filters {
+    top: 218px;
+    left: 12px;
+    right: 12px;
+  }
+
+  .route-builder,
+  .poi-preview {
+    left: 12px;
+    right: 12px;
+    bottom: 92px;
+  }
 }

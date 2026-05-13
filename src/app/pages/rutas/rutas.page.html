@@ -1,13 +1,107 @@
-<ion-content [fullscreen]="true">
-  <div class="route-card-container">
-    <div
-      class="route-container"
-      *ngFor="let route of routes"
-      (click)="openModal(route)"
-    >
-      <h2>{{ route.name }}</h2>
-      <p>{{ route.description }}</p>
-      <p class="route-duration">Duración: {{ route.duration }}</p>
-    </div>
+<ion-content class="nexo-page-content routes-content" [fullscreen]="true">
+  <div class="routes-page">
+    <!-- ENCABEZADO -->
+    <section class="routes-hero">
+      <span class="eyebrow">Experiencias turísticas</span>
+      <h1>Rutas de Tabasco 🧭</h1>
+      <p>
+        Explora rutas recomendadas y consulta los recorridos personalizados que
+        has creado.
+      </p>
+    </section>
+
+    <!-- MIS RUTAS PERSONALIZADAS -->
+    <section class="routes-section">
+      <div class="section-header">
+        <div>
+          <h2>✨ Mis rutas personalizadas</h2>
+          <p>Rutas creadas por ti desde el mapa.</p>
+        </div>
+
+        <span class="section-count">
+          {{ customRoutes.length }} guardada(s)
+        </span>
+      </div>
+
+      <div
+        class="custom-routes-list"
+        *ngIf="customRoutes.length > 0; else noCustomRoutes"
+      >
+        <div
+          class="custom-route-card"
+          *ngFor="let route of customRoutes"
+          (click)="openCustomRouteModal(route)"
+        >
+          <div class="custom-route-top">
+            <div>
+              <span class="route-tag">Personalizada</span>
+              <h3>{{ route.name }}</h3>
+            </div>
+
+            <span class="route-points">+30 pts</span>
+          </div>
+
+          <p class="custom-description" *ngIf="route.description">
+            {{ route.description }}
+          </p>
+
+          <p class="custom-description" *ngIf="!route.description">
+            Ruta personalizada creada desde el mapa de NEXO.
+          </p>
+
+          <div class="route-places">
+            <strong>Lugares:</strong>
+            <span>{{ getCustomRoutePlacesText(route) }}</span>
+          </div>
+
+          <div class="custom-route-footer">
+            <span>{{ route.route_places.length }} parada(s)</span>
+            <span>{{ route.created_at | date:'dd/MM/yyyy' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #noCustomRoutes>
+        <div class="empty-custom-routes">
+          <div class="empty-icon">🧭</div>
+          <h3>Aún no tienes rutas personalizadas</h3>
+          <p>
+            Ve al mapa, toca “Crear mi ruta” y selecciona los lugares que
+            quieras visitar.
+          </p>
+        </div>
+      </ng-template>
+    </section>
+
+    <!-- RUTAS RECOMENDADAS -->
+    <section class="routes-section">
+      <div class="section-header">
+        <div>
+          <h2>🗺️ Rutas recomendadas</h2>
+          <p>Recorridos sugeridos para explorar el estado.</p>
+        </div>
+
+        <span class="section-count"> {{ routes.length }} disponible(s) </span>
+      </div>
+
+      <div class="recommended-routes-list">
+        <div
+          class="recommended-route-card"
+          *ngFor="let route of routes"
+          (click)="openModal(route)"
+        >
+          <span class="route-tag recommended">Recomendada</span>
+
+          <h3>{{ route.name }}</h3>
+
+          <p>{{ route.description }}</p>
+
+          <div class="recommended-route-footer">
+            <span>📍 {{ getPoisForRoute(route.id).length }} lugar(es)</span>
+            <span>⏱️ {{ route.duration }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 </ion-content>

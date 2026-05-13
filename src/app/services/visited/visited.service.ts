@@ -9,35 +9,28 @@ import { GamificationService } from '../gamification/gamification.service';
 
 interface VisitedPlaceResponse {
   id: string;
-  place: any; // Puede ser string (ID) o un objeto completo
+  place: any;
   user: number | string;
   visited_date: string;
   notes?: string;
 }
 
-interface ApiResponse {
-  results?: VisitedPlaceResponse[];
-  count?: number;
-}
-
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root'
 })
 export class VisitedService {
   private visitedList = new BehaviorSubject<string[]>([]);
   private visitDates = new BehaviorSubject<Record<string, string>>({});
-  private visitMap = new Map<
-    string,
-    { visitId: string; date: string | null; notes?: string }
-  >();
+  private visitMap = new Map<string, { visitId: string; date: string | null; notes?: string }>();
+
   private isLoading = false;
-  private pendingOperations = new Map<string, boolean>(); // Map para rastrear operaciones pendientes
+  private pendingOperations = new Map<string, boolean>();
 
   constructor(
     private apiService: ApiService,
     private userService: UserService,
     private toastController: ToastController,
-    private gamificationService: GamificationService,
+    private gamificationService: GamificationService
   ) {
     this.loadVisited();
   }
@@ -55,84 +48,80 @@ export class VisitedService {
     this.isLoading = true;
     const headers = this.getAuthHeaders();
 
-    // Usar el nuevo endpoint de lugares visitados
-    this.apiService
-      .getVisitedPlaces<any>(headers)
-      .pipe(
-        map((response) => {
-          // Manejar diferentes estructuras de respuesta
-          if (Array.isArray(response)) {
-            return response;
-          } else if (response && response.results) {
-            return response.results;
-          } else {
-            console.error('Formato de respuesta desconocido:', response);
-            return [];
-          }
-        }),
-        finalize(() => {
-          this.isLoading = false;
-        }),
-      )
-      .subscribe({
-        next: (visitedPlaces) => {
-          if (!Array.isArray(visitedPlaces)) {
-            console.error('La respuesta no es un array:', visitedPlaces);
-            this.visitedList.next([]);
-            this.visitDates.next({});
-            return;
-          }
+    this.apiService.getVisitedPlaces<any>(headers).pipe(
+      map(response => {
+        if (Array.isArray(response)) {
+          return response;
+        }
 
-          // Extraer los IDs de los lugares visitados
-          const visitedPlaceIds = visitedPlaces
-            .map((vp) => {
-              // Manejar diferentes formatos de place (string o objeto)
-              if (typeof vp.place === 'string') {
-                return vp.place;
-              } else if (vp.place && vp.place.id) {
-                return vp.place.id;
-              }
-              return null;
-            })
-            .filter((id) => id !== null) as string[];
+        if (response && response.results) {
+          return response.results;
+        }
 
-          // Actualizar el mapa de visitas y fechas
-          const dates: Record<string, string> = {};
-          this.visitMap.clear();
-
-          visitedPlaces.forEach((vp) => {
-            const placeId =
-              typeof vp.place === 'string'
-                ? vp.place
-                : vp.place && vp.place.id
-                  ? vp.place.id
-                  : null;
-            if (placeId) {
-              this.visitMap.set(placeId, {
-                visitId: vp.id,
-                date: vp.visited_date,
-                notes: vp.notes,
-              });
-
-              if (vp.visited_date) {
-                dates[placeId] = vp.visited_date;
-              }
-            }
-          });
-
-          this.visitedList.next(visitedPlaceIds);
-          this.visitDates.next(dates);
-
-          // Limpiar operaciones pendientes
-          this.pendingOperations.clear();
-        },
-        error: (error) => {
-          console.error('Error loading visited places:', error);
+        console.error('Formato de respuesta desconocido:', response);
+        return [];
+      }),
+      finalize(() => {
+        this.isLoading = false;
+      })
+    ).subscribe({
+      next: (visitedPlaces) => {
+        if (!Array.isArray(visitedPlaces)) {
+          console.error('La respuesta no es un array:', visitedPlaces);
           this.visitedList.next([]);
           this.visitDates.next({});
-          this.isLoading = false;
-        },
-      });
+          return;
+        }
+
+        const visitedPlaceIds = visitedPlaces
+          .map(vp => {
+            if (typeof vp.place === 'string') {
+              return vp.place;
+            }
+
+            if (vp.place && vp.place.id) {
+              return vp.place.id;
+            }
+
+            return null;
+          })
+          .filter(id => id !== null) as string[];
+
+        const dates: Record<string, string> = {};
+        this.visitMap.clear();
+
+        visitedPlaces.forEach(vp => {
+          const placeId =
+            typeof vp.place === 'string'
+              ? vp.place
+              : vp.place && vp.place.id
+                ? vp.place.id
+                : null;
+
+          if (placeId) {
+            this.visitMap.set(placeId, {
+              visitId: vp.id,
+              date: vp.visited_date,
+              notes: vp.notes
+            });
+
+            if (vp.visited_date) {
+              dates[placeId] = vp.visited_date;
+            }
+          }
+        });
+
+        this.visitedList.next(visitedPlaceIds);
+        this.visitDates.next(dates);
+        this.pendingOperations.clear();
+      },
+      error: (error) => {
+        console.error('Error loading visited places:', error);
+        this.visitedList.next([]);
+        this.visitDates.next({});
+        this.isLoading = false;
+      }
+    });
   }
 
   getVisited(): Observable<string[]> {
@@ -152,26 +141,20 @@ export class VisitedService {
     return this.visitMap.has(placeId);
   }
 
-  addVisited(
-    placeId: string,
-    date = new Date(),
-    notes?: string,
-  ): Observable<boolean> {
-    // Verificar si hay una operación pendiente para este lugar
+  addVisited(placeId: string, date = new Date(), notes?: string): Observable<boolean> {
     if (this.pendingOperations.get(placeId)) {
       console.log('Operación pendiente para este lugar, esperando...');
       return of(true);
     }
 
-    // Si ya está en visitados, no hacemos nada
     if (this.isVisited(placeId)) {
       return of(true);
     }
 
-    // Marcar como operación pendiente
     this.pendingOperations.set(placeId, true);
 
     const userId = this.userService.getCurrentUserId();
+
     if (!userId) {
       console.error('No se pudo obtener el ID del usuario');
       this.pendingOperations.delete(placeId);
@@ -179,89 +162,85 @@ export class VisitedService {
     }
 
     const headers = this.getAuthHeaders();
-    const dateStr = date.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+    const dateStr = date.toISOString().split('T')[0];
 
-    // Usar el nuevo endpoint para añadir lugares visitados
-    return this.apiService
-      .addVisitedPlace<VisitedPlaceResponse>(
-        placeId,
-        dateStr,
-        notes ? { notes } : undefined,
-        headers,
-      )
-      .pipe(
-        tap((response) => {
-          if (response && response.id) {
-            const currentVisited = this.visitedList.value;
-            const currentDates = this.visitDates.value;
+    return this.apiService.addVisitedPlace<VisitedPlaceResponse>(
+      placeId,
+      dateStr,
+      notes ? { notes } : undefined,
+      headers
+    ).pipe(
+      tap(response => {
+        if (response && response.id) {
+          const currentVisited = this.visitedList.value;
+          const currentDates = { ...this.visitDates.value };
 
-            // Extraer el ID del lugar correctamente
-            let responseId: string;
-            if (typeof response.place === 'string') {
-              responseId = response.place;
-            } else if (response.place && response.place.id) {
-              responseId = response.place.id;
-            } else {
-              responseId = placeId; // Usar el ID original si no se puede extraer
-            }
+          let responseId: string;
 
-            this.visitMap.set(responseId, {
-              visitId: response.id,
-              date: response.visited_date,
-              notes: response.notes,
-            });
-
-            if (response.visited_date) {
-              currentDates[responseId] = response.visited_date;
-            }
-
-            if (!currentVisited.includes(responseId)) {
-              this.visitedList.next([...currentVisited, responseId]);
-            }
-            this.visitDates.next(currentDates);
-
-            // Mostrar mensaje de éxito
-            this.showToast('Lugar marcado como visitado');
-            this.gamificationService
-              .awardPoints('visited_place', responseId)
-              .subscribe({
-                error: (error) =>
-                  console.error('Error al otorgar puntos por visita:', error),
-              });
+          if (typeof response.place === 'string') {
+            responseId = response.place;
+          } else if (response.place && response.place.id) {
+            responseId = response.place.id;
+          } else {
+            responseId = placeId;
           }
-        }),
-        map(() => true),
-        catchError((error) => {
-          console.error('Error adding visit:', error);
-          // Mostrar mensaje de error
-          this.showToast('Error al marcar como visitado. Reintentando...');
-          return of(false);
-        }),
-        finalize(() => {
-          // Limpiar la operación pendiente al finalizar
-          setTimeout(() => {
-            this.pendingOperations.delete(placeId);
-          }, 500);
-        }),
-      );
+
+          this.visitMap.set(responseId, {
+            visitId: response.id,
+            date: response.visited_date,
+            notes: response.notes
+          });
+
+          if (response.visited_date) {
+            currentDates[responseId] = response.visited_date;
+          }
+
+          if (!currentVisited.includes(responseId)) {
+            this.visitedList.next([...currentVisited, responseId]);
+          }
+
+          this.visitDates.next(currentDates);
+
+          this.showToast('Lugar marcado como visitado');
+
+          this.gamificationService.awardPoints('visited_place', responseId).subscribe({
+            next: () => {
+              console.log('Puntos otorgados por lugar visitado:', responseId);
+            },
+            error: (error: unknown) => {
+              console.error('Error al otorgar puntos por visita:', error);
+            }
+          });
+        }
+      }),
+      map(() => true),
+      catchError(error => {
+        console.error('Error adding visit:', error);
+        this.showToast('Error al marcar como visitado. Reintentando...');
+        return of(false);
+      }),
+      finalize(() => {
+        setTimeout(() => {
+          this.pendingOperations.delete(placeId);
+        }, 500);
+      })
+    );
   }
 
   removeVisited(placeId: string): Observable<boolean> {
-    // Verificar si hay una operación pendiente para este lugar
     if (this.pendingOperations.get(placeId)) {
       console.log('Operación pendiente para este lugar, esperando...');
       return of(true);
     }
 
-    // Si no está en visitados, no hacemos nada
     if (!this.isVisited(placeId)) {
       return of(false);
     }
 
-    // Marcar como operación pendiente
     this.pendingOperations.set(placeId, true);
 
     const visitInfo = this.visitMap.get(placeId);
+
     if (!visitInfo || !visitInfo.visitId) {
       this.pendingOperations.delete(placeId);
       return of(false);
@@ -269,37 +248,31 @@ export class VisitedService {
 
     const headers = this.getAuthHeaders();
 
-    // Usar el nuevo endpoint para eliminar lugares visitados
-    return this.apiService
-      .removeVisitedPlace<any>(visitInfo.visitId, headers)
-      .pipe(
-        tap(() => {
-          const currentVisited = this.visitedList.value;
-          const currentDates = { ...this.visitDates.value };
+    return this.apiService.removeVisitedPlace<any>(visitInfo.visitId, headers).pipe(
+      tap(() => {
+        const currentVisited = this.visitedList.value;
+        const currentDates = { ...this.visitDates.value };
 
-          this.visitMap.delete(placeId);
-          delete currentDates[placeId];
+        this.visitMap.delete(placeId);
+        delete currentDates[placeId];
 
-          this.visitedList.next(currentVisited.filter((id) => id !== placeId));
-          this.visitDates.next(currentDates);
+        this.visitedList.next(currentVisited.filter(id => id !== placeId));
+        this.visitDates.next(currentDates);
 
-          // Mostrar mensaje de éxito
-          this.showToast('Lugar eliminado de visitados');
-        }),
-        map(() => true),
-        catchError((error) => {
-          console.error('Error removing visit:', error);
-          // Mostrar mensaje de error
-          this.showToast('Error al eliminar de visitados. Reintentando...');
-          return of(false);
-        }),
-        finalize(() => {
-          // Limpiar la operación pendiente al finalizar
-          setTimeout(() => {
-            this.pendingOperations.delete(placeId);
-          }, 500);
-        }),
-      );
+        this.showToast('Lugar eliminado de visitados');
+      }),
+      map(() => true),
+      catchError(error => {
+        console.error('Error removing visit:', error);
+        this.showToast('Error al eliminar de visitados. Reintentando...');
+        return of(false);
+      }),
+      finalize(() => {
+        setTimeout(() => {
+          this.pendingOperations.delete(placeId);
+        }, 500);
+      })
+    );
   }
 
   toggleVisited(placeId: string): Observable<boolean> {
@@ -317,8 +290,9 @@ export class VisitedService {
       message,
       duration: 2000,
       position: 'bottom',
-      color: 'medium',
+      color: 'medium'
     });
-    toast.present();
+
+    await toast.present();
   }
 }

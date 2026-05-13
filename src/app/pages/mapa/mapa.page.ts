@@ -1,10 +1,16 @@
 import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonContent, ModalController } from '@ionic/angular/standalone';
+import {
+  IonContent,
+  ModalController,
+  AlertController
+} from '@ionic/angular/standalone';
 
 import { LeafletMapComponent } from '../../components/leaflet-map/leaflet-map.component';
 import { PoiService } from 'src/app/services/poi/poi.service';
+import { RouteService } from 'src/app/services/route/route.service';
+import { GamificationService } from 'src/app/services/gamification/gamification.service';
 import { Poi } from 'src/app/models/poi.model';
 import { PoiModalComponent } from 'src/app/components/poi-modal/poi-modal.component';
 
@@ -28,11 +34,15 @@ export class MapaPage implements OnInit, OnDestroy {
   private watchId: number | null = null;
 
   isCreatingRoute = false;
+  isSavingRoute = false;
   customRoute: Poi[] = [];
 
   constructor(
     private poiService: PoiService,
-    private modalCtrl: ModalController
+    private routeService: RouteService,
+    private gamificationService: GamificationService,
+    private modalCtrl: ModalController,
+    private alertController: AlertController
   ) {}
 
   ngOnInit() {}
@@ -176,13 +186,108 @@ export class MapaPage implements OnInit, OnDestroy {
     this.customRoute = this.customRoute.filter(poi => poi.id !== poiId);
   }
 
-  finalizarRuta() {
+  async finalizarRuta() {
     if (this.customRoute.length === 0) {
+      await this.mostrarAlerta(
+        'Ruta vacía',
+        'Agrega al menos un lugar para poder guardar tu ruta personalizada.'
+      );
       return;
     }
 
-    console.log('Ruta personalizada creada:', this.customRoute);
-    this.isCreatingRoute = false;
+    if (this.isSavingRoute) {
+      return;
+    }
+
+    const alert = await this.alertController.create({
+      header: 'Guardar ruta',
+      message: 'Asigna un nombre a tu ruta personalizada.',
+      inputs: [
+        {
+          name: 'name',
+          type: 'text',
+          placeholder: 'Ej. Ruta cultural de Tabasco',
+          attributes: {
+            maxlength: 100
+          }
+        },
+        {
+          name: 'description',
+          type: 'textarea',
+          placeholder: 'Descripción opcional de la ruta'
+        }
+      ],
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Guardar',
+          handler: (data) => {
+            const routeName = (data.name || '').trim();
+            const description = (data.description || '').trim();
+
+            if (!routeName) {
+              this.mostrarAlerta(
+                'Nombre requerido',
+                'Escribe un nombre para guardar la ruta.'
+              );
+              return false;
+            }
+
+            this.guardarRutaPersonalizada(routeName, description);
+            return true;
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  private guardarRutaPersonalizada(name: string, description: string) {
+    this.isSavingRoute = true;
+
+    const placeIds = this.customRoute.map(poi => poi.id);
+
+    this.routeService.createCustomRoute({
+      name,
+      description,
+      places: placeIds
+    }).subscribe({
+      next: (customRoute) => {
+        console.log('Ruta personalizada guardada:', customRoute);
+
+        this.gamificationService.awardPoints('custom_route', customRoute.id).subscribe({
+          next: () => {
+            console.log('Puntos otorgados por crear ruta personalizada');
+          },
+          error: (error: unknown) => {
+            console.error('Error al otorgar puntos por ruta personalizada:', error);
+          }
+        });
+
+        this.isSavingRoute = false;
+        this.isCreatingRoute = false;
+        this.customRoute = [];
+
+        this.mostrarAlerta(
+          'Ruta guardada',
+          'Tu ruta personalizada se guardó correctamente y se agregaron puntos a tu perfil.'
+        );
+      },
+      error: (error: unknown) => {
+        console.error('Error al guardar ruta personalizada:', error);
+
+        this.isSavingRoute = false;
+
+        this.mostrarAlerta(
+          'Error',
+          'No se pudo guardar la ruta personalizada. Inténtalo nuevamente.'
+        );
+      }
+    });
   }
 
   async abrirDetalleCompleto(poi: Poi, event?: Event) {
@@ -229,5 +334,15 @@ export class MapaPage implements OnInit, OnDestroy {
 
   cerrarPreview() {
     this.selectedPoi = null;
+  }
+
+  private async mostrarAlerta(header: string, message: string) {
+    const alert = await this.alertController.create({
+      header,
+      message,
+      buttons: ['Aceptar']
+    });
+
+    await alert.present();
   }
 }

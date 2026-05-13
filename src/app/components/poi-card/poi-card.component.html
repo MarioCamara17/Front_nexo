@@ -1,6 +1,6 @@
-<div class="card-wrapper">
+<div class="card-wrapper" [class.detail-mode]="!isFavoritePage">
   <div class="card-container">
-    <ion-card>
+    <ion-card (click)="onCardClick()">
       <button
         *ngIf="isFavoritePage"
         class="favorite-button"
@@ -8,33 +8,49 @@
         [disabled]="isProcessingFavorite"
         [class.processing]="isProcessingFavorite"
       >
-        <mat-icon [ngClass]="{ favorite: isFav, 'no-favorite': !isFav }"
-          >favorite</mat-icon
-        >
+        <mat-icon [ngClass]="{ favorite: isFav, 'no-favorite': !isFav }">
+          favorite
+        </mat-icon>
       </button>
-      <img [src]="image" (click)="onCardClick()" />
+
+      <img [src]="image" [alt]="title" />
+
       <ion-card-header>
         <ion-card-title>{{ title }}</ion-card-title>
       </ion-card-header>
     </ion-card>
+
     <div *ngIf="!isFavoritePage" class="favorite-info-container">
       <div class="visit-date-container">
         <p>Fecha de visita:</p>
-        <p>{{ visitDate | date : "dd/MM/yyyy" }}</p>
+
+        <strong *ngIf="visitDate; else pendingDate">
+          {{ visitDate | date : "dd/MM/yyyy" }}
+        </strong>
+
+        <ng-template #pendingDate>
+          <strong>Pendiente</strong>
+        </ng-template>
       </div>
+
       <div class="is-visited-container">
-        <button class="visited-button" 
-                (click)="onVisitedClick($event)"
-                [disabled]="isProcessingVisit"
-                [class.processing]="isProcessingVisit">
-          <mat-icon
-            [ngClass]="{ visited: isVisited, 'not-visited': !isVisited }"
-            >{{ isVisited ? "hourglass_bottom" : "hourglass_top" }}</mat-icon
-          >
+        <button
+          class="visited-button"
+          (click)="onVisitedClick($event)"
+          [disabled]="isProcessingVisit"
+          [class.processing]="isProcessingVisit"
+        >
+          <mat-icon [ngClass]="{ visited: isVisited, 'not-visited': !isVisited }">
+            {{ isVisited ? "hourglass_bottom" : "hourglass_top" }}
+          </mat-icon>
         </button>
+
         <p>{{ isVisited ? "Visitado" : "Pendiente" }}</p>
       </div>
-      <button class="delete-button" (click)="onRemoveClick($event)">Eliminar</button>
+
+      <button class="delete-button" (click)="onRemoveClick($event)">
+        Eliminar
+      </button>
     </div>
   </div>
 </div>

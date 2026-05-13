@@ -77,3 +77,47 @@ ion-modal.poi-modal button {
     --max-height: 85vh;
   }
 }
+
+:root {
+  --nexo-topbar-height: 82px;
+  --nexo-tabbar-height: 82px;
+}
+
+.nexo-page-content {
+  --padding-top: var(--nexo-topbar-height);
+  --padding-bottom: var(--nexo-tabbar-height);
+}
+
+.nexo-page-wrapper {
+  padding-top: 0;
+}
+
+ion-modal.route-modal {
+  --width: min(92vw, 680px);
+  --height: 72vh;
+  --max-height: 72vh;
+  --border-radius: 20px;
+  --box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+}
+
+ion-modal.route-modal::part(content) {
+  border-radius: 20px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+ion-modal.route-modal ion-content {
+  --background: #ffffff;
+  --padding-top: 0;
+  --padding-bottom: 16px;
+  --padding-start: 0;
+  --padding-end: 0;
+}
+
+@media (max-width: 576px) {
+  ion-modal.route-modal {
+    --width: 95vw;
+    --height: 82vh;
+    --max-height: 82vh;
+  }
+}
