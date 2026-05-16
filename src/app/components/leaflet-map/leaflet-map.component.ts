@@ -13,6 +13,19 @@ import { Poi } from 'src/app/models/poi.model';
 import { CommonModule } from '@angular/common';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 
+interface OsrmRouteResponse {
+  code: string;
+  message?: string;
+  routes?: Array<{
+    distance: number;
+    duration: number;
+    geometry: {
+      type: string;
+      coordinates: [number, number][];
+    };
+  }>;
+}
+
 @Component({
   selector: 'app-leaflet-map',
   templateUrl: './leaflet-map.component.html',
@@ -23,16 +36,16 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 })
 export class LeafletMapComponent implements OnInit, OnChanges {
   @Input() pois: Poi[] = [];
-  @Input() userLocation: { lat: number; lng: number } | null = null;
+  @Input() routePois: Poi[] = [];
 
   @Output() poiClicked = new EventEmitter<Poi>();
 
   map: L.Map | undefined;
 
   private markers: L.Marker[] = [];
-  private userLocationMarker: L.CircleMarker | null = null;
-  private userLocationCircle: L.Circle | null = null;
-  private hasCenteredOnUser = false;
+  private routeLine: L.Polyline | null = null;
+  private routeOrderMarkers: L.Marker[] = [];
+  private currentRouteRequest = 0;
 
   mapInitialized = false;
 
@@ -46,7 +59,7 @@ export class LeafletMapComponent implements OnInit, OnChanges {
 
       L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(this.map!);
+      }).addTo(this.map);
 
       this.mapInitialized = true;
 
@@ -54,9 +67,7 @@ export class LeafletMapComponent implements OnInit, OnChanges {
         this.addMarkers();
       }
 
-      if (this.userLocation) {
-        this.updateUserLocationMarker();
-      }
+      this.updateRouteLine();
 
       setTimeout(() => {
         this.map?.invalidateSize();
@@ -70,8 +81,8 @@ export class LeafletMapComponent implements OnInit, OnChanges {
       this.addMarkers();
     }
 
-    if (changes['userLocation'] && this.mapInitialized && this.map) {
-      this.updateUserLocationMarker();
+    if (changes['routePois'] && this.mapInitialized && this.map) {
+      this.updateRouteLine();
     }
   }
 
@@ -86,19 +97,29 @@ export class LeafletMapComponent implements OnInit, OnChanges {
     });
   }
 
+  private getPoiCoordinates(poi: Poi): [number, number] | null {
+    const lat = parseFloat(poi.latitude);
+    const lng = parseFloat(poi.longitude);
+
+    if (isNaN(lat) || isNaN(lng)) {
+      return null;
+    }
+
+    return [lat, lng];
+  }
+
   private addMarkers() {
     if (!this.map) return;
 
     this.pois.forEach((poi) => {
-      const lat = parseFloat(poi.latitude);
-      const lng = parseFloat(poi.longitude);
+      const coords = this.getPoiCoordinates(poi);
 
-      if (isNaN(lat) || isNaN(lng)) {
+      if (!coords) {
         console.warn('POI con coordenadas inválidas:', poi.name, poi.latitude, poi.longitude);
         return;
       }
 
-      const marker = L.marker([lat, lng], {
+      const marker = L.marker(coords, {
         icon: this.getIconByCategory(poi)
       }).addTo(this.map!);
 
@@ -106,7 +127,7 @@ export class LeafletMapComponent implements OnInit, OnChanges {
         `
         <div style="text-align:center;">
           <strong>${poi.name}</strong><br>
-          <small>${poi.category.name || 'Turismo'}</small><br>
+          <small>${poi.category?.name || 'Turismo'}</small><br>
           ⭐ +50 pts
         </div>
         `,
@@ -117,14 +138,12 @@ export class LeafletMapComponent implements OnInit, OnChanges {
       );
 
       marker.on('click', () => {
-        console.log('Pin clickeado:', poi.name);
         this.ngZone.run(() => {
           this.poiClicked.emit(poi);
         });
       });
 
       marker.on('touchend', () => {
-        console.log('Pin tocado:', poi.name);
         this.ngZone.run(() => {
           this.poiClicked.emit(poi);
         });
@@ -133,61 +152,152 @@ export class LeafletMapComponent implements OnInit, OnChanges {
       this.markers.push(marker);
     });
 
-    if (this.markers.length > 0 && !this.userLocation) {
+    if (this.markers.length > 0 && this.routePois.length === 0) {
       const group = L.featureGroup(this.markers);
       this.map.fitBounds(group.getBounds(), { padding: [30, 30] });
     }
   }
 
-  private updateUserLocationMarker() {
-    if (!this.map || !this.userLocation) return;
+  private async updateRouteLine() {
+    if (!this.map) return;
 
-    const { lat, lng } = this.userLocation;
+    this.clearRouteLine();
 
-    if (this.userLocationMarker) {
-      this.map.removeLayer(this.userLocationMarker);
+    if (!this.routePois || this.routePois.length < 2) {
+      return;
     }
 
-    if (this.userLocationCircle) {
-      this.map.removeLayer(this.userLocationCircle);
+    const requestId = ++this.currentRouteRequest;
+
+    const directCoordinates = this.routePois
+      .map((poi) => this.getPoiCoordinates(poi))
+      .filter((coords): coords is [number, number] => coords !== null);
+
+    if (directCoordinates.length < 2) {
+      return;
     }
 
-    this.userLocationCircle = L.circle([lat, lng], {
-      radius: 80,
-      color: '#2563eb',
-      fillColor: '#60a5fa',
-      fillOpacity: 0.18,
-      weight: 2
-    }).addTo(this.map);
+    try {
+      const roadCoordinates = await this.getRoadRouteFromOsrm(directCoordinates);
 
-    this.userLocationMarker = L.circleMarker([lat, lng], {
-      radius: 9,
-      color: '#ffffff',
-      weight: 3,
-      fillColor: '#2563eb',
-      fillOpacity: 1
-    }).addTo(this.map);
+      if (requestId !== this.currentRouteRequest) {
+        return;
+      }
 
-    this.userLocationMarker.bindTooltip('Tu ubicación actual', {
-      direction: 'top',
-      offset: [0, -10]
-    });
+      this.drawRouteLine(roadCoordinates, false);
+      this.addRouteOrderMarkers();
+      this.fitRouteBounds(roadCoordinates);
+    } catch (error) {
+      console.warn('No se pudo obtener ruta por carretera. Usando línea directa:', error);
 
-    if (!this.hasCenteredOnUser) {
-      this.map.setView([lat, lng], 14, {
-        animate: true
-      });
+      if (requestId !== this.currentRouteRequest) {
+        return;
+      }
 
-      this.hasCenteredOnUser = true;
+      this.drawRouteLine(directCoordinates, true);
+      this.addRouteOrderMarkers();
+      this.fitRouteBounds(directCoordinates);
     }
   }
 
-  centrarEnUbicacionActual() {
-    if (!this.map || !this.userLocation) return;
+  private async getRoadRouteFromOsrm(routeCoordinates: [number, number][]): Promise<[number, number][]> {
+    const coordinatesForOsrm = routeCoordinates
+      .map(([lat, lng]) => `${lng},${lat}`)
+      .join(';');
 
-    this.map.setView([this.userLocation.lat, this.userLocation.lng], 14, {
-      animate: true
+    const url =
+      `https://router.project-osrm.org/route/v1/driving/${coordinatesForOsrm}` +
+      `?overview=full&geometries=geojson&steps=false`;
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`OSRM respondió con estado ${response.status}`);
+    }
+
+    const data = (await response.json()) as OsrmRouteResponse;
+
+    if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) {
+      throw new Error(data.message || 'OSRM no devolvió una ruta válida');
+    }
+
+    const geometry = data.routes[0].geometry.coordinates;
+
+    return geometry.map(([lng, lat]) => [lat, lng]);
+  }
+
+  private drawRouteLine(routeCoordinates: [number, number][], isFallback: boolean) {
+    if (!this.map) return;
+
+    this.routeLine = L.polyline(routeCoordinates, {
+      color: isFallback ? '#d97706' : '#0f766e',
+      weight: 6,
+      opacity: 0.92,
+      lineCap: 'round',
+      lineJoin: 'round',
+      dashArray: isFallback ? '8, 8' : undefined
+    }).addTo(this.map);
+  }
+
+  private addRouteOrderMarkers() {
+    if (!this.map) return;
+
+    this.routePois.forEach((poi, index) => {
+      const coords = this.getPoiCoordinates(poi);
+      if (!coords) return;
+
+      const orderIcon = L.divIcon({
+        className: 'route-order-marker',
+        html: `<div>${index + 1}</div>`,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+      });
+
+      const orderMarker = L.marker(coords, {
+        icon: orderIcon,
+        interactive: false
+      }).addTo(this.map!);
+
+      this.routeOrderMarkers.push(orderMarker);
     });
+  }
+
+  private fitRouteBounds(routeCoordinates: [number, number][]) {
+    if (!this.map || routeCoordinates.length < 2) return;
+
+    const bounds = L.latLngBounds(routeCoordinates);
+
+    this.map.fitBounds(bounds, {
+      padding: [70, 70],
+      maxZoom: 13
+    });
+  }
+
+  private clearRouteLine() {
+    if (!this.map) return;
+
+    if (this.routeLine) {
+      this.map.removeLayer(this.routeLine);
+      this.routeLine = null;
+    }
+
+    this.routeOrderMarkers.forEach((marker) => {
+      this.map?.removeLayer(marker);
+    });
+
+    this.routeOrderMarkers = [];
+  }
+
+  centrarRuta() {
+    if (!this.map || !this.routePois || this.routePois.length < 2) return;
+
+    const routeCoordinates = this.routePois
+      .map((poi) => this.getPoiCoordinates(poi))
+      .filter((coords): coords is [number, number] => coords !== null);
+
+    if (routeCoordinates.length < 2) return;
+
+    this.fitRouteBounds(routeCoordinates);
   }
 
   private clearMarkers() {

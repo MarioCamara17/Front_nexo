@@ -17,19 +17,23 @@ interface ChatMessage {
   imports: [CommonModule, FormsModule, IonicModule]
 })
 export class ChatbotPage {
-
-  newMessage: string = '';
+  newMessage = '';
   messages: ChatMessage[] = [
-    { role: 'bot', text: 'Hola, soy el asistente de NEXO. ¿En qué puedo ayudarte?' }
+    {
+      role: 'bot',
+      text: 'Hola, soy el asistente de NEXO. ¿En qué puedo ayudarte?'
+    }
   ];
-  loading: boolean = false;
+  loading = false;
 
   constructor(private chatService: ChatService) {}
 
   sendMessage() {
     const text = this.newMessage.trim();
 
-    if (!text || this.loading) return;
+    if (!text || this.loading) {
+      return;
+    }
 
     this.messages.push({ role: 'user', text });
     this.newMessage = '';
@@ -39,16 +43,19 @@ export class ChatbotPage {
       next: (response) => {
         this.messages.push({
           role: 'bot',
-          text: response.reply
+          text: response.reply || 'No pude generar una respuesta en este momento.'
         });
+
         this.loading = false;
       },
       error: (error) => {
-        console.error('Error:', error);
+        console.error('Error en chatbot:', error);
+
         this.messages.push({
           role: 'bot',
-          text: 'Error al conectar con el servidor.'
+          text: 'No pude conectarme con el servidor. Verifica que el backend esté encendido y que estés en la misma red WiFi.'
         });
+
         this.loading = false;
       }
     });

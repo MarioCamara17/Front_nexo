@@ -245,3 +245,41 @@ ion-content {
     font-size: 2.1rem;
   }
 }
+
+.optimize-btn {
+  background: #7c3aed;
+}
+
+.center-route-btn {
+  background: #2563eb;
+}
+
+.route-builder-header > div {
+  min-width: 0;
+}
+
+.route-builder-header p {
+  margin: 3px 0 0;
+  font-size: 0.76rem;
+  color: #6b7280;
+}
+
+.optimized-badge {
+  background: #ccfbf1;
+  color: #0f766e;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.preview-btn.optimize {
+  background: #7c3aed;
+  color: #ffffff;
+}
+
+.preview-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

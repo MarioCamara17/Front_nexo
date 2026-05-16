@@ -63,4 +63,8 @@ export class RouteService {
   createCustomRoute(payload: CreateCustomRoutePayload): Observable<CustomRoute> {
     return this.apiService.postData<CustomRoute>('/custom-routes/', payload);
   }
+
+  deleteCustomRoute(id: string): Observable<void> {
+    return this.apiService.deleteData<void>(`/custom-routes/${id}/`);
+  }
 }

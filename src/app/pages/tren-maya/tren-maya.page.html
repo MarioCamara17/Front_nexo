@@ -1,105 +1,186 @@
-<ion-content class="nexo-page-content" [fullscreen]="true">
+<ion-content class="nexo-page-content tren-content" [fullscreen]="true">
   <div class="tren-page">
-    <div class="hero-card">
-      <span class="eyebrow">Movilidad turística</span>
-      <h1>🚆 Tren Maya</h1>
-      <p>
-        Explora la conexión del Tren Maya con Tabasco y descubre rutas, estaciones
-        y lugares estratégicos para enriquecer la experiencia del visitante.
-      </p>
-    </div>
-
-    <div class="section">
-      <div class="section-header">
-        <h2>🗺️ Ruta estratégica en Tabasco</h2>
-        <span class="section-note">Conectividad regional</span>
-      </div>
-
-      <div class="route-highlight">
-        <h3>Corredor turístico de la región Ríos</h3>
+    <!-- HERO -->
+    <section class="hero-card">
+      <div class="hero-text">
+        <span class="eyebrow">Movilidad turística inteligente</span>
+        <h1>🚆 Tren Maya + NEXO</h1>
         <p>
-          La propuesta de NEXO busca fortalecer la difusión de sitios turísticos
-          cercanos a zonas de movilidad y tránsito regional, especialmente en
-          municipios con alto potencial cultural y natural.
+          Conecta la movilidad regional con experiencias turísticas digitales:
+          rutas, lugares cercanos, contenido cultural, gamificación y futuras
+          experiencias de realidad aumentada.
         </p>
-
-        <div class="route-tags">
-          <span>Balancán</span>
-          <span>Tenosique</span>
-          <span>Emiliano Zapata</span>
-        </div>
       </div>
-    </div>
 
-    <div class="section">
+      <div class="hero-actions">
+        <button class="primary-action" [routerLink]="['/tabs/map']">
+          Ver lugares en mapa
+        </button>
+
+        <button class="secondary-action" [routerLink]="['/tabs/routes']">
+          Explorar rutas
+        </button>
+      </div>
+    </section>
+
+    <!-- RESUMEN DE VALOR -->
+    <section class="value-card">
+      <div class="value-icon">✨</div>
+      <div>
+        <h2>¿Qué aporta esta sección?</h2>
+        <p>
+          El apartado Tren Maya funciona como un puente entre transporte,
+          turismo y patrimonio. Su objetivo es orientar al visitante hacia
+          sitios cercanos, rutas temáticas y experiencias culturales de Tabasco.
+        </p>
+      </div>
+    </section>
+
+    <!-- ZONAS DE CONEXIÓN -->
+    <section class="section">
       <div class="section-header">
-        <h2>📍 Puntos clave de conexión</h2>
-        <span class="section-note">Referencia turística</span>
+        <div>
+          <h2>📍 Zonas de conexión turística</h2>
+          <p>Áreas clave para vincular movilidad y recorridos locales.</p>
+        </div>
+        <span class="section-note">Región Ríos</span>
       </div>
 
-      <div class="stations-list">
-        <div class="station-card">
-          <div class="station-icon">📌</div>
-          <div>
-            <h3>Balancán</h3>
-            <p>Zona estratégica para la promoción de rutas históricas, naturales y arqueológicas.</p>
-          </div>
-        </div>
+      <div class="zones-grid">
+        <div class="zone-card" *ngFor="let zone of connectionZones">
+          <div class="zone-icon">{{ zone.icon }}</div>
 
-        <div class="station-card">
-          <div class="station-icon">📌</div>
-          <div>
-            <h3>Tenosique</h3>
-            <p>Conexión con paisajes ribereños, corredor cultural y sitios arqueológicos como Pomoná.</p>
-          </div>
-        </div>
+          <div class="zone-info">
+            <h3>{{ zone.name }}</h3>
+            <p>{{ zone.description }}</p>
 
-        <div class="station-card">
-          <div class="station-icon">📌</div>
-          <div>
-            <h3>Región Ríos</h3>
-            <p>Área con potencial para fortalecer el turismo local mediante orientación digital y rutas temáticas.</p>
+            <div class="zone-tags">
+              <span *ngFor="let tag of zone.tags">{{ tag }}</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="section">
+    <!-- RUTAS SUGERIDAS -->
+    <section class="section">
       <div class="section-header">
-        <h2>🌐 Integración con NEXO</h2>
-        <span class="section-note">Experiencia digital</span>
+        <div>
+          <h2>🧭 Rutas sugeridas desde zonas de conexión</h2>
+          <p>
+            Recorridos pensados para visitantes que llegan o transitan por la
+            región.
+          </p>
+        </div>
+        <span class="section-note">Demo funcional</span>
+      </div>
+
+      <div class="suggested-routes">
+        <div class="suggested-route-card" *ngFor="let route of suggestedRoutes">
+          <div class="route-top">
+            <span class="route-type">{{ route.type }}</span>
+            <span class="route-points">{{ route.points }}</span>
+          </div>
+
+          <h3>{{ route.title }}</h3>
+          <p>{{ route.description }}</p>
+
+          <div class="route-footer">
+            <span>📌 {{ route.stops }}</span>
+            <span>🎖️ Recompensas</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LUGARES CERCANOS -->
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2>🌎 Lugares cercanos recomendados</h2>
+          <p>
+            Sitios que pueden integrarse a rutas culturales, naturales o
+            históricas.
+          </p>
+        </div>
+        <span class="section-note">Exploración</span>
+      </div>
+
+      <div class="nearby-list">
+        <div class="nearby-card" *ngFor="let place of nearbyPlaces">
+          <div class="nearby-icon">{{ place.icon }}</div>
+
+          <div>
+            <span class="nearby-category">{{ place.category }}</span>
+            <h3>{{ place.name }}</h3>
+            <p>{{ place.description }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INTEGRACIÓN CON NEXO -->
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2>🌐 Integración con NEXO</h2>
+          <p>Funciones que fortalecen la experiencia del visitante.</p>
+        </div>
       </div>
 
       <div class="integration-card">
-        <p>
-          NEXO complementa la experiencia del visitante al ofrecer orientación
-          sobre lugares cercanos, rutas sugeridas, contenido cultural, mapas
-          interactivos y futuras experiencias de realidad aumentada vinculadas al
-          recorrido turístico en Tabasco.
-        </p>
-
         <div class="integration-grid">
           <div class="integration-item">
-            <strong>Mapa interactivo</strong>
-            <span>Ubicación de sitios y recorridos</span>
+            <strong>🗺️ Mapa interactivo</strong>
+            <span>Ubicación de sitios, rutas y puntos turísticos.</span>
           </div>
 
           <div class="integration-item">
-            <strong>Chatbot</strong>
-            <span>Apoyo informativo para el visitante</span>
+            <strong>🎖️ Gamificación</strong>
+            <span>Puntos por visitar lugares, crear rutas y explorar.</span>
           </div>
 
           <div class="integration-item">
-            <strong>Rutas temáticas</strong>
-            <span>Historia, naturaleza y cultura</span>
+            <strong>🤖 Chatbot</strong>
+            <span>Asistente para recomendaciones y orientación turística.</span>
           </div>
 
           <div class="integration-item">
-            <strong>Realidad aumentada</strong>
-            <span>Fase futura para experiencias inmersivas</span>
+            <strong>👓 Realidad aumentada</strong>
+            <span
+              >Experiencias visuales para interpretar patrimonio cultural.</span
+            >
           </div>
         </div>
       </div>
-    </div>
+    </section>
+
+    <!-- IMPACTO -->
+    <section class="impact-card">
+      <h2>Impacto esperado</h2>
+      <p>
+        Esta sección permite presentar al Tren Maya como una oportunidad para
+        redistribuir el flujo turístico hacia comunidades, municipios y sitios
+        con valor cultural, fortaleciendo la economía local y la conservación
+        del patrimonio.
+      </p>
+
+      <div class="impact-grid">
+        <div>
+          <strong>ODS 8</strong>
+          <span>Turismo y economía local</span>
+        </div>
+
+        <div>
+          <strong>ODS 9</strong>
+          <span>Innovación tecnológica</span>
+        </div>
+
+        <div>
+          <strong>ODS 11</strong>
+          <span>Patrimonio y comunidades</span>
+        </div>
+      </div>
+    </section>
   </div>
 </ion-content>

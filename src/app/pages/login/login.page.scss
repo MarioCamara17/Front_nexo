@@ -1,152 +1,229 @@
-.login-form {
-  max-width: 400px;
+ion-content {
+  --background: linear-gradient(180deg, #083344 0%, #0f766e 42%, #f5f7fa 42%, #f5f7fa 100%);
+}
+
+.register-container {
+  width: 100%;
+  max-width: 450px;
+  min-height: 100%;
   margin: 0 auto;
-  padding: 20px;
-  height: 100%;
+  padding: 28px 22px 36px;
+
   display: flex;
   flex-direction: column;
   justify-content: center;
-
-  .logo-section {
-    text-align: center;
-    margin-bottom: 2rem;
-
-    ion-icon {
-      font-size: 4rem;
-      color: var(--ion-color-primary);
-    }
-
-    h1 {
-      margin: 1rem 0 0.5rem;
-      font-size: 1.8rem;
-      font-weight: 600;
-    }
-
-    p {
-      color: var(--ion-color-medium);
-      margin: 0;
-    }
-  }
-
-  ion-item {
-    margin-bottom: 16px;
-    --background: transparent;
-    --border-color: var(--ion-color-medium);
-    --border-radius: 8px;
-    --padding-start: 16px;
-    --padding-end: 16px;
-    --inner-padding-end: 0;
-
-    &.item-has-focus {
-      --border-color: var(--ion-color-primary);
-    }
-  }
-
-  .error-messages {
-    margin-top: -12px;
-    margin-bottom: 16px;
-    padding-left: 16px;
-
-    ion-text {
-      display: block;
-      margin-bottom: 4px;
-    }
-  }
-
-  .password-strength {
-    margin-top: -12px;
-    margin-bottom: 16px;
-    padding: 0 16px;
-
-    ion-text {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 500;
-    }
-
-    ion-progress-bar {
-      height: 4px;
-      --progress-background: var(--ion-color-light);
-    }
-  }
-
-  ion-button[type="submit"] {
-    margin-top: 24px;
-    height: 48px;
-    font-weight: 600;
-    --border-radius: 8px;
-
-    &:disabled {
-      opacity: 0.6;
-    }
-
-    ion-spinner {
-      margin-right: 8px;
-    }
-  }
-
-  // Estilos para el botón de mostrar/ocultar contraseña
-  ion-button[fill="clear"] {
-    --color: var(--ion-color-medium);
-    
-    &:hover {
-      --color: var(--ion-color-primary);
-    }
-  }
-
-  .register-link {
-    text-align: center;
-    margin-top: 2rem;
-    
-    p {
-      color: var(--ion-color-medium);
-      margin: 0;
-    }
-
-    a {
-      color: var(--ion-color-primary);
-      text-decoration: none;
-      font-weight: 500;
-
-      &:hover {
-        text-decoration: underline;
-      }
-    }
-  }
 }
 
-// Animaciones para las validaciones
-.error-messages {
+/* LOGO / ENCABEZADO */
+.logo-section {
+  text-align: center;
+  margin-bottom: 24px;
+  color: #ffffff;
+}
+
+.logo-section ion-icon {
+  font-size: 4rem;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.logo-section h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+  font-family: Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.02em;
+}
+
+.logo-section p {
+  margin: 8px auto 0;
+  max-width: 330px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.94rem;
+  line-height: 1.4;
+}
+
+/* TARJETA */
+form {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 24px;
+  padding: 24px 20px 22px;
+  box-shadow: 0 18px 35px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(12px);
+}
+
+/* CAMPOS */
+ion-item {
+  margin-bottom: 15px;
+
+  --background: #f8fafc;
+  --border-color: #d1d5db;
+  --border-radius: 14px;
+  --border-width: 1px;
+  --padding-start: 14px;
+  --padding-end: 10px;
+  --inner-padding-end: 0;
+  --min-height: 56px;
+
+  border-radius: 14px;
+}
+
+ion-item.item-has-focus {
+  --border-color: #0f766e;
+  --highlight-color-focused: #0f766e;
+}
+
+ion-label {
+  color: #374151 !important;
+  font-weight: 600;
+}
+
+ion-input {
+  --color: #111827;
+  --placeholder-color: #9ca3af;
+}
+
+/* ERRORES */
+.error-message {
+  color: #dc2626;
+  font-size: 0.78rem;
+  margin: -8px 0 13px 10px;
   animation: slideInUp 0.3s ease-out;
 }
 
-.password-strength {
-  animation: fadeIn 0.3s ease-out;
+/* BOTÓN PRINCIPAL */
+.register-button {
+  margin-top: 18px;
+  height: 50px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+
+  --border-radius: 14px;
+  --background: linear-gradient(135deg, #0f766e, #0ea5e9);
+  --background-hover: linear-gradient(135deg, #0d665f, #0284c7);
+  --color: #ffffff;
+  --box-shadow: 0 8px 18px rgba(14, 165, 233, 0.25);
 }
 
+.register-button:disabled {
+  opacity: 0.65;
+}
+
+.register-button ion-spinner {
+  margin-right: 8px;
+}
+
+/* BOTÓN MOSTRAR/OCULTAR CONTRASEÑA */
+ion-button[fill='clear'] {
+  --color: #6b7280;
+}
+
+ion-button[fill='clear']:hover {
+  --color: #0f766e;
+}
+
+/* LINK LOGIN */
+.login-link {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.login-link p {
+  color: #4b5563;
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.login-link a {
+  color: #0f766e;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.login-link a:hover {
+  text-decoration: underline;
+}
+
+/* ANIMACIONES */
 @keyframes slideInUp {
   from {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
+/* RESPONSIVO */
+@media (max-width: 480px) {
+  .register-container {
+    padding: 24px 18px 34px;
+    justify-content: flex-start;
   }
-  to {
-    opacity: 1;
+
+  .logo-section {
+    margin-top: 10px;
+  }
+
+  .logo-section h1 {
+    font-size: 1.85rem;
+  }
+
+  form {
+    padding: 22px 18px;
   }
 }
 
-// Responsive design
-@media (max-width: 480px) {
-  .login-form {
-    padding: 16px;
-  }
+.brand-logo {
+  width: 92px;
+  height: 92px;
+  object-fit: contain;
+  margin: 0 auto 12px;
+  display: block;
+
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 8px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
+}
+
+.form-title {
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.form-title h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.form-title span {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.84rem;
+  color: #6b7280;
+  line-height: 1.35;
+}
+
+.remember-item {
+  --background: transparent;
+  --padding-start: 0;
+  --min-height: 38px;
+  margin-bottom: 8px;
+}
+
+.remember-item ion-checkbox {
+  color: #374151;
+  font-size: 0.9rem;
+}
+
+.logo-section ion-icon {
+  font-size: 4rem;
+  color: #ffffff;
+  margin-bottom: 8px;
 }

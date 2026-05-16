@@ -52,6 +52,8 @@ export class PoiModalComponent implements OnInit, OnDestroy {
   private visitedSubscription?: Subscription;
   private authSubscription?: Subscription;
 
+  private audioPlayer?: HTMLAudioElement;
+
   constructor(
     private favoriteService: FavoritesService,
     private visitedService: VisitedService,
@@ -155,12 +157,104 @@ export class PoiModalComponent implements OnInit, OnDestroy {
 
   async toggleSpeech() {
     if (this.isSpeaking) {
-      await TextToSpeech.stop();
-      this.isSpeaking = false;
+      await this.stopNarration();
       return;
     }
 
+    const localAudioPath = this.getLocalNarrationAudio();
+
+    if (localAudioPath) {
+      this.playLocalAudio(localAudioPath);
+      return;
+    }
+
+    await this.playFallbackTextToSpeech();
+  }
+
+  private getLocalNarrationAudio(): string | null {
+    if (this.isRouteContext || !this.title) {
+      return null;
+    }
+
+    const normalizedTitle = this.normalizeText(this.title);
+
+    if (normalizedTitle.includes('girasol')) {
+      return 'assets/audio/girasoles.mp3';
+    }
+
+    if (
+      normalizedTitle.includes('iglesia') ||
+      normalizedTitle.includes('tila') ||
+      normalizedTitle.includes('colores')
+    ) {
+      return 'assets/audio/iglesia-colores.mp3';
+    }
+
+    if (
+      normalizedTitle.includes('parque central') ||
+      normalizedTitle.includes('central de balancan') ||
+      normalizedTitle.includes('parque central de balancan')
+    ) {
+      return 'assets/audio/parque-central.mp3';
+    }
+
+    if (
+      normalizedTitle.includes('boca del cerro') ||
+      normalizedTitle.includes('puente de boca') ||
+      normalizedTitle.includes('puente boca')
+    ) {
+      return 'assets/audio/boca-cerro.mp3';
+    }
+
+    return null;
+  }
+
+  private normalizeText(value: string): string {
+    return value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
+
+  private playLocalAudio(audioPath: string) {
+    this.stopLocalAudio();
+
+    TextToSpeech.stop();
+
+    this.audioPlayer = new Audio(audioPath);
+    this.audioPlayer.preload = 'auto';
+
     this.isSpeaking = true;
+    this.cdr.detectChanges();
+
+    this.audioPlayer.onended = () => {
+      this.isSpeaking = false;
+      this.cdr.detectChanges();
+    };
+
+    this.audioPlayer.onerror = async () => {
+      console.error('No se pudo reproducir el audio local:', audioPath);
+
+      this.isSpeaking = false;
+      this.cdr.detectChanges();
+
+      await this.playFallbackTextToSpeech();
+    };
+
+    this.audioPlayer.play().catch(async (error) => {
+      console.error('Error al iniciar reproducción de audio local:', error);
+
+      this.isSpeaking = false;
+      this.cdr.detectChanges();
+
+      await this.playFallbackTextToSpeech();
+    });
+  }
+
+  private async playFallbackTextToSpeech() {
+    this.isSpeaking = true;
+    this.cdr.detectChanges();
 
     const detailedText = [
       this.info,
@@ -171,20 +265,50 @@ export class PoiModalComponent implements OnInit, OnDestroy {
 
     const textToSpeak = this.isRouteContext
       ? this.route?.description || ''
-      : detailedText || '';
+      : detailedText || this.info || '';
 
-    await TextToSpeech.speak({
-      text: textToSpeak,
-      lang: 'es-MX',
-      rate: 1.0,
-      pitch: 1.0,
-      volume: 1.0,
-    });
+    if (!textToSpeak) {
+      this.isSpeaking = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    try {
+      await TextToSpeech.speak({
+        text: textToSpeak,
+        lang: 'es-MX',
+        rate: 1.0,
+        pitch: 1.0,
+        volume: 1.0
+      });
+    } catch (error) {
+      console.error('Error usando TextToSpeech:', error);
+    } finally {
+      this.isSpeaking = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  private async stopNarration() {
+    this.stopLocalAudio();
+    await TextToSpeech.stop();
 
     this.isSpeaking = false;
+    this.cdr.detectChanges();
+  }
+
+  private stopLocalAudio() {
+    if (this.audioPlayer) {
+      this.audioPlayer.pause();
+      this.audioPlayer.currentTime = 0;
+      this.audioPlayer.src = '';
+      this.audioPlayer.load();
+      this.audioPlayer = undefined;
+    }
   }
 
   ngOnDestroy(): void {
+    this.stopLocalAudio();
     TextToSpeech.stop();
 
     if (this.favSubscription) {
@@ -201,6 +325,9 @@ export class PoiModalComponent implements OnInit, OnDestroy {
   }
 
   dismiss(refresh: boolean = false) {
+    this.stopLocalAudio();
+    TextToSpeech.stop();
+
     if (this.displayMode === 'modal') {
       this.modalCtrl.dismiss({ refresh });
     } else if (this.displayMode === 'popup' && this.onPopupClose) {

@@ -1,9 +1,29 @@
 :host {
   display: block;
+  width: 100%;
   height: 100%;
 }
 
 #mapId {
   width: 100%;
   height: 100%;
+}
+
+:host ::ng-deep .route-order-marker {
+  background: transparent;
+  border: none;
+}
+
+:host ::ng-deep .route-order-marker div {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0f766e, #0ea5e9);
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
 }

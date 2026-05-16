@@ -1,12 +1,12 @@
 <ion-content class="nexo-page-content routes-content" [fullscreen]="true">
   <div class="routes-page">
+
     <!-- ENCABEZADO -->
     <section class="routes-hero">
       <span class="eyebrow">Experiencias turísticas</span>
       <h1>Rutas de Tabasco 🧭</h1>
       <p>
-        Explora rutas recomendadas y consulta los recorridos personalizados que
-        has creado.
+        Explora rutas recomendadas y consulta los recorridos personalizados que has creado.
       </p>
     </section>
 
@@ -23,10 +23,7 @@
         </span>
       </div>
 
-      <div
-        class="custom-routes-list"
-        *ngIf="customRoutes.length > 0; else noCustomRoutes"
-      >
+      <div class="custom-routes-list" *ngIf="customRoutes.length > 0; else noCustomRoutes">
         <div
           class="custom-route-card"
           *ngFor="let route of customRoutes"
@@ -58,6 +55,25 @@
             <span>{{ route.route_places.length }} parada(s)</span>
             <span>{{ route.created_at | date:'dd/MM/yyyy' }}</span>
           </div>
+
+          <div class="custom-route-actions">
+            <button
+              class="view-map-route-btn"
+              type="button"
+              (click)="verRutaEnMapa(route, $event)"
+            >
+              Ver en mapa
+            </button>
+
+            <button
+              class="delete-custom-route-btn"
+              type="button"
+              [disabled]="deletingRouteId === route.id"
+              (click)="confirmDeleteCustomRoute(route, $event)"
+            >
+              {{ deletingRouteId === route.id ? 'Eliminando...' : 'Eliminar ruta' }}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -66,8 +82,7 @@
           <div class="empty-icon">🧭</div>
           <h3>Aún no tienes rutas personalizadas</h3>
           <p>
-            Ve al mapa, toca “Crear mi ruta” y selecciona los lugares que
-            quieras visitar.
+            Ve al mapa, toca “Crear ruta óptima” y selecciona los lugares que quieras visitar.
           </p>
         </div>
       </ng-template>
@@ -81,7 +96,9 @@
           <p>Recorridos sugeridos para explorar el estado.</p>
         </div>
 
-        <span class="section-count"> {{ routes.length }} disponible(s) </span>
+        <span class="section-count">
+          {{ routes.length }} disponible(s)
+        </span>
       </div>
 
       <div class="recommended-routes-list">
@@ -94,7 +111,9 @@
 
           <h3>{{ route.name }}</h3>
 
-          <p>{{ route.description }}</p>
+          <p>
+            {{ route.description }}
+          </p>
 
           <div class="recommended-route-footer">
             <span>📍 {{ getPoisForRoute(route.id).length }} lugar(es)</span>
@@ -103,5 +122,6 @@
         </div>
       </div>
     </section>
+
   </div>
 </ion-content>

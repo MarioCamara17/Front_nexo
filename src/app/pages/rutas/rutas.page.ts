@@ -1,7 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonContent, ModalController } from '@ionic/angular/standalone';
+import {
+  IonContent,
+  ModalController,
+  AlertController
+} from '@ionic/angular/standalone';
+import { Router } from '@angular/router';
 
 import {
   RouteService,
@@ -27,11 +32,14 @@ export class RutasPage implements OnInit {
 
   isLoadingRoutes = false;
   isLoadingCustomRoutes = false;
+  deletingRouteId: string | null = null;
 
   constructor(
     private routeService: RouteService,
     private poiService: PoiService,
-    private modalCtrl: ModalController
+    private modalCtrl: ModalController,
+    private alertController: AlertController,
+    private router: Router
   ) {}
 
   ngOnInit() {
@@ -167,6 +175,73 @@ export class RutasPage implements OnInit {
     });
 
     await modal.present();
+  }
+
+  verRutaEnMapa(route: CustomRoute, event: Event) {
+    event.stopPropagation();
+
+    this.router.navigate(['/tabs/map'], {
+      queryParams: {
+        customRouteId: route.id
+      }
+    });
+  }
+
+  async confirmDeleteCustomRoute(route: CustomRoute, event: Event) {
+    event.stopPropagation();
+
+    const alert = await this.alertController.create({
+      header: 'Eliminar ruta',
+      message: `¿Seguro que quieres eliminar la ruta "${route.name}"? Esta acción no se puede deshacer.`,
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Eliminar',
+          role: 'destructive',
+          handler: () => {
+            this.deleteCustomRoute(route.id);
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  private deleteCustomRoute(routeId: string) {
+    if (this.deletingRouteId) {
+      return;
+    }
+
+    this.deletingRouteId = routeId;
+
+    this.routeService.deleteCustomRoute(routeId).subscribe({
+      next: () => {
+        this.customRoutes = this.customRoutes.filter(route => route.id !== routeId);
+        this.deletingRouteId = null;
+      },
+      error: (error) => {
+        console.error('Error eliminando ruta personalizada:', error);
+        this.deletingRouteId = null;
+
+        this.showErrorAlert(
+          'No se pudo eliminar la ruta. Verifica tu conexión e inténtalo nuevamente.'
+        );
+      }
+    });
+  }
+
+  private async showErrorAlert(message: string) {
+    const alert = await this.alertController.create({
+      header: 'Error',
+      message,
+      buttons: ['Aceptar']
+    });
+
+    await alert.present();
   }
 
   getCustomRoutePlacesText(customRoute: CustomRoute): string {

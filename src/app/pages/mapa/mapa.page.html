@@ -1,9 +1,10 @@
 <ion-content class="map-content" [fullscreen]="true">
   <div class="page-wrapper">
     <div class="map-header">
-      <h1>🗺️ Explora Tabasco</h1>
-      <p>Descubre lugares, rutas y experiencias</p>
-      <p class="location-error" *ngIf="locationError">{{ locationError }}</p>
+      <h1>🗺️ Rutas inteligentes</h1>
+      <p>
+        Selecciona lugares turísticos y NEXO trazará recorridos optimizados.
+      </p>
 
       <div class="route-mode-actions">
         <button
@@ -11,15 +12,23 @@
           [class.active]="isCreatingRoute"
           (click)="toggleRouteCreation()"
         >
-          {{ isCreatingRoute ? 'Cancelar ruta' : 'Crear mi ruta' }}
+          {{ isCreatingRoute ? 'Cancelar ruta' : 'Crear ruta óptima' }}
         </button>
 
         <button
-          class="route-mode-btn location-btn"
-          *ngIf="userLocation"
-          (click)="centrarMiUbicacion()"
+          class="route-mode-btn optimize-btn"
+          *ngIf="isCreatingRoute && customRoute.length >= 2"
+          (click)="optimizarRuta()"
         >
-          📍 Mi ubicación
+          ⚡ Optimizar
+        </button>
+
+        <button
+          class="route-mode-btn center-route-btn"
+          *ngIf="routePoisToDisplay.length >= 2"
+          (click)="leafletMap?.centrarRuta()"
+        >
+          🎯 Ver ruta
         </button>
       </div>
     </div>
@@ -69,23 +78,49 @@
     <div class="map-container">
       <app-leaflet-map
         [pois]="filteredPois"
-        [userLocation]="userLocation"
+        [routePois]="routePoisToDisplay"
         (poiClicked)="abrirPoiModal($event)"
       >
       </app-leaflet-map>
     </div>
 
-    <div class="route-builder" *ngIf="isCreatingRoute">
-      <div class="route-builder-header">
-        <h3>🧭 Mi ruta personalizada</h3>
-        <span>{{ customRoute.length }} parada(s)</span>
+    <div class="selected-route-floating" *ngIf="selectedSavedRoute && !isCreatingRoute">
+      <div>
+        <strong>{{ selectedSavedRoute.name }}</strong>
+        <span>{{ selectedSavedRoute.route_places.length }} parada(s)</span>
       </div>
 
-      <p class="route-builder-help">
-        Toca los marcadores del mapa para agregar lugares a tu ruta.
+      <button type="button" (click)="limpiarRutaGuardadaSeleccionada()">
+        Quitar
+      </button>
+    </div>
+
+    <div class="route-builder" *ngIf="isCreatingRoute">
+      <div class="route-builder-header">
+        <div>
+          <h3>🧭 Ruta personalizada</h3>
+          <p>
+            {{ customRoute.length }} parada(s)
+            <span *ngIf="totalDistanceKm > 0">
+              · {{ totalDistanceKm }} km aprox.
+            </span>
+          </p>
+        </div>
+
+        <span class="optimized-badge" *ngIf="isRouteOptimized">
+          Optimizada
+        </span>
+      </div>
+
+      <p class="route-builder-help" *ngIf="customRoute.length === 0">
+        Toca marcadores del mapa para agregar lugares a tu recorrido.
       </p>
 
-      <div class="route-list" *ngIf="customRoute.length > 0; else emptyRoute">
+      <p class="route-builder-help" *ngIf="customRoute.length === 1">
+        Agrega al menos otro lugar para poder optimizar la ruta.
+      </p>
+
+      <div class="route-list" *ngIf="customRoute.length > 0">
         <div class="route-item" *ngFor="let poi of customRoute; let i = index">
           <div class="route-order">{{ i + 1 }}</div>
 
@@ -98,17 +133,29 @@
         </div>
       </div>
 
-      <ng-template #emptyRoute>
-        <p class="empty-route-text">Aún no has agregado lugares a tu ruta.</p>
-      </ng-template>
-
       <div class="route-builder-actions">
-        <button class="preview-btn secondary" (click)="limpiarRutaPersonalizada()">
+        <button
+          class="preview-btn secondary"
+          (click)="limpiarRutaPersonalizada()"
+          [disabled]="customRoute.length === 0"
+        >
           Limpiar
         </button>
 
-        <button class="preview-btn primary" (click)="finalizarRuta()">
-          Finalizar
+        <button
+          class="preview-btn optimize"
+          (click)="optimizarRuta()"
+          [disabled]="customRoute.length < 2"
+        >
+          Optimizar
+        </button>
+
+        <button
+          class="preview-btn primary"
+          (click)="finalizarRuta()"
+          [disabled]="customRoute.length < 2 || isSavingRoute"
+        >
+          {{ isSavingRoute ? 'Guardando...' : 'Guardar' }}
         </button>
       </div>
     </div>

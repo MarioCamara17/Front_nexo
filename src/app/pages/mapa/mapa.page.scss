@@ -323,3 +323,110 @@ ion-content.map-content {
     bottom: 92px;
   }
 }
+
+.location-status {
+  margin-top: 4px;
+  font-size: 0.72rem;
+  color: #047857;
+}
+
+.saved-routes-panel {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.08);
+}
+
+.saved-routes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.saved-routes-header h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.saved-routes-header p {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+
+.saved-routes-header span {
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.saved-routes-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.saved-route-chip {
+  border: none;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.saved-route-chip.active {
+  background: linear-gradient(135deg, #0f766e, #0ea5e9);
+  color: #ffffff;
+}
+
+.selected-saved-route {
+  margin-top: 12px;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 10px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.selected-saved-route div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.selected-saved-route strong {
+  color: #111827;
+  font-size: 0.88rem;
+}
+
+.selected-saved-route span {
+  color: #6b7280;
+  font-size: 0.76rem;
+}
+
+.selected-saved-route button {
+  border: none;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 7px 10px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
