@@ -9,7 +9,7 @@ import { catchError, map, switchMap, tap, timeout } from 'rxjs/operators';
 })
 export class ApiService {
   private apiUrl = environment.apiUrl;
-  private apiVersion = 'v1';
+  private apiVersion = environment.apiVersion;
   private baseApiPath = `${this.apiUrl}/api/${this.apiVersion}`;
   private timeoutMs = 15000; // 15 segundos de timeout para las peticiones
 

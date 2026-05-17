@@ -1,4 +1,5 @@
 export const environment = {
-  production: false,
-  apiUrl: 'https://back-nexo.onrender.com/api/chat/'
+  production: true,
+  apiUrl: 'https://back-nexo.onrender.com',
+  apiVersion: 'v1'
 };

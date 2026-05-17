@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, timeout } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 export interface ChatResponse {
   reply: string;
@@ -10,7 +11,7 @@ export interface ChatResponse {
   providedIn: 'root'
 })
 export class ChatService {
-  private apiUrl = 'https://back-nexo.onrender.com/api/chat/';
+  private apiUrl = `${environment.apiUrl}/api/chat/`;
 
   constructor(private http: HttpClient) {}
 
