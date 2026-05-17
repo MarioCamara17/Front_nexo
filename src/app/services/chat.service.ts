@@ -10,7 +10,7 @@ export interface ChatResponse {
   providedIn: 'root'
 })
 export class ChatService {
-  private apiUrl = `http://${window.location.hostname}:8000/api/chat/`;
+  private apiUrl = 'https://back-nexo.onrender.com/api/chat/';
 
   constructor(private http: HttpClient) {}
 

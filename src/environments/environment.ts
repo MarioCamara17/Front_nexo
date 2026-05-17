@@ -4,7 +4,7 @@
 
 export const environment = {
   production: false,
-  apiUrl: `http://${window.location.hostname}:8000`
+  apiUrl: 'https://back-nexo.onrender.com/api/chat/'
 };
 
 /*
