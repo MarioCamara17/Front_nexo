@@ -5,41 +5,39 @@ import {
   FormGroup,
   Validators,
   ReactiveFormsModule,
-  AbstractControl,
+  AbstractControl
 } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import {
   IonicModule,
   AlertController,
-  ToastController,
-  LoadingController,
+  ToastController
 } from '@ionic/angular';
-import { AuthService } from '../../services/auth/auth.service';
+import { finalize } from 'rxjs/operators';
 
-// Interfaz para el usuario
-interface User {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-}
+import { AuthService } from '../../services/auth/auth.service';
 
 @Component({
   selector: 'app-register',
   templateUrl: './register.page.html',
   styleUrls: ['./register.page.scss'],
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, IonicModule, RouterModule],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    IonicModule,
+    RouterModule
+  ]
 })
 export class RegisterPage implements OnInit {
   registerForm!: FormGroup;
   showPassword = false;
   isLoading = false;
 
-  // Patrones de validación
   private namePattern = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]{2,}$/;
   private emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  // Contraseña: mínimo 8 caracteres, no solo números
+
+  // Mínimo 8 caracteres, al menos una letra y un número.
   private passwordPattern = /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/;
 
   constructor(
@@ -47,8 +45,7 @@ export class RegisterPage implements OnInit {
     private router: Router,
     private alertController: AlertController,
     private toastController: ToastController,
-    private loadingController: LoadingController,
-    private authService: AuthService,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
@@ -60,41 +57,64 @@ export class RegisterPage implements OnInit {
       {
         firstName: [
           '',
-          [Validators.required, Validators.pattern(this.namePattern)],
+          [
+            Validators.required,
+            Validators.pattern(this.namePattern)
+          ]
         ],
         lastName: [
           '',
-          [Validators.required, Validators.pattern(this.namePattern)],
+          [
+            Validators.required,
+            Validators.pattern(this.namePattern)
+          ]
         ],
         email: [
           '',
-          [Validators.required, Validators.pattern(this.emailPattern)],
+          [
+            Validators.required,
+            Validators.pattern(this.emailPattern)
+          ]
         ],
         password: [
           '',
           [
             Validators.required,
             Validators.minLength(8),
-            Validators.pattern(this.passwordPattern),
-          ],
+            Validators.pattern(this.passwordPattern)
+          ]
         ],
-        confirmPassword: ['', [Validators.required]],
+        confirmPassword: [
+          '',
+          [
+            Validators.required
+          ]
+        ]
       },
       {
-        validators: this.passwordMatchValidator,
-      },
+        validators: this.passwordMatchValidator
+      }
     );
   }
 
-  private passwordMatchValidator(form: FormGroup) {
+  private passwordMatchValidator(form: AbstractControl) {
     const password = form.get('password');
     const confirmPassword = form.get('confirmPassword');
 
-    if (password?.value !== confirmPassword?.value) {
-      confirmPassword?.setErrors({ passwordMismatch: true });
-    } else {
-      confirmPassword?.setErrors(null);
+    if (!password || !confirmPassword) {
+      return null;
     }
+
+    if (password.value !== confirmPassword.value) {
+      confirmPassword.setErrors({ passwordMismatch: true });
+      return { passwordMismatch: true };
+    }
+
+    if (confirmPassword.hasError('passwordMismatch')) {
+      confirmPassword.setErrors(null);
+    }
+
+    return null;
   }
 
   togglePasswordVisibility() {
@@ -102,100 +122,168 @@ export class RegisterPage implements OnInit {
   }
 
   async onRegister() {
-    if (this.registerForm.valid) {
-      this.isLoading = true;
+    if (!this.registerForm.valid) {
+      await this.showValidationErrors();
+      return;
+    }
 
-      const loading = await this.loadingController.create({
-        message: 'Registrando usuario...',
-      });
+    if (this.isLoading) {
+      return;
+    }
 
-      await loading.present();
+    this.isLoading = true;
 
-      const userData = {
-        username: this.registerForm.value.email,
-        first_name: this.registerForm.value.firstName,
-        last_name: this.registerForm.value.lastName,
-        email: this.registerForm.value.email,
-        password: this.registerForm.value.password,
-      };
+    const userData = {
+      username: this.registerForm.value.email,
+      first_name: this.registerForm.value.firstName,
+      last_name: this.registerForm.value.lastName,
+      email: this.registerForm.value.email,
+      password: this.registerForm.value.password
+    };
 
-      this.authService.register(userData).subscribe({
+    console.log('Enviando registro:', userData);
+
+    this.authService.register(userData)
+      .pipe(
+        finalize(() => {
+          this.isLoading = false;
+        })
+      )
+      .subscribe({
         next: async (response) => {
           console.log('Registro exitoso:', response);
 
-          await loading.dismiss();
-
           await this.showSuccessMessage();
+
+          this.registerForm.reset();
 
           this.router.navigate(['/login']);
         },
-
         error: async (error) => {
-          console.error('ERROR COMPLETO:', error);
+          console.error('Error completo en registro:', error);
 
-          await loading.dismiss();
-
-          let errorMessage = 'Error al registrar usuario';
-
-          if (error.error) {
-            errorMessage = JSON.stringify(error.error);
-          }
+          const errorMessage = this.getRegisterErrorMessage(error);
 
           await this.showErrorMessage(errorMessage);
-        },
+        }
       });
-    } else {
-      await this.showValidationErrors();
+  }
+
+  private getRegisterErrorMessage(error: any): string {
+    if (!error) {
+      return 'Error desconocido al registrar usuario.';
     }
+
+    if (error.status === 0) {
+      return 'No se pudo conectar con el servidor. Verifica tu conexión.';
+    }
+
+    if (error.error) {
+      if (typeof error.error === 'string') {
+        return error.error;
+      }
+
+      if (error.error.email) {
+        return Array.isArray(error.error.email)
+          ? error.error.email[0]
+          : error.error.email;
+      }
+
+      if (error.error.username) {
+        return Array.isArray(error.error.username)
+          ? error.error.username[0]
+          : error.error.username;
+      }
+
+      if (error.error.password) {
+        return Array.isArray(error.error.password)
+          ? error.error.password[0]
+          : error.error.password;
+      }
+
+      if (error.error.detail) {
+        return error.error.detail;
+      }
+
+      if (error.error.non_field_errors) {
+        return Array.isArray(error.error.non_field_errors)
+          ? error.error.non_field_errors[0]
+          : error.error.non_field_errors;
+      }
+
+      return JSON.stringify(error.error);
+    }
+
+    if (error.message) {
+      return error.message;
+    }
+
+    return 'Error al registrar usuario. Intenta nuevamente.';
   }
 
   private async showValidationErrors() {
     const errors: string[] = [];
 
     const firstNameControl = this.registerForm.get('firstName');
+
     if (firstNameControl?.errors) {
-      const firstNameErrors = firstNameControl.errors;
-      if (firstNameErrors['required']) errors.push('El nombre es requerido');
-      if (firstNameErrors['pattern'])
+      if (firstNameControl.errors['required']) {
+        errors.push('El nombre es requerido');
+      }
+
+      if (firstNameControl.errors['pattern']) {
         errors.push('El nombre solo debe contener letras y espacios');
+      }
     }
 
     const lastNameControl = this.registerForm.get('lastName');
+
     if (lastNameControl?.errors) {
-      const lastNameErrors = lastNameControl.errors;
-      if (lastNameErrors['required']) errors.push('El apellido es requerido');
-      if (lastNameErrors['pattern'])
+      if (lastNameControl.errors['required']) {
+        errors.push('El apellido es requerido');
+      }
+
+      if (lastNameControl.errors['pattern']) {
         errors.push('El apellido solo debe contener letras y espacios');
+      }
     }
 
     const emailControl = this.registerForm.get('email');
+
     if (emailControl?.errors) {
-      const emailErrors = emailControl.errors;
-      if (emailErrors['required']) errors.push('El email es requerido');
-      if (emailErrors['pattern']) {
+      if (emailControl.errors['required']) {
+        errors.push('El email es requerido');
+      }
+
+      if (emailControl.errors['pattern']) {
         errors.push('El formato del email no es válido');
       }
     }
 
     const passwordControl = this.registerForm.get('password');
+
     if (passwordControl?.errors) {
-      const passwordErrors = passwordControl.errors;
-      if (passwordErrors['required']) errors.push('La contraseña es requerida');
-      if (passwordErrors['minlength'])
+      if (passwordControl.errors['required']) {
+        errors.push('La contraseña es requerida');
+      }
+
+      if (passwordControl.errors['minlength']) {
         errors.push('La contraseña debe tener al menos 8 caracteres');
-      if (passwordErrors['pattern']) {
-        errors.push(
-          'La contraseña debe contener al menos una letra y un número',
-        );
+      }
+
+      if (passwordControl.errors['pattern']) {
+        errors.push('La contraseña debe contener al menos una letra y un número');
       }
     }
 
     const confirmPasswordControl = this.registerForm.get('confirmPassword');
+
     if (confirmPasswordControl?.errors) {
-      const confirmPasswordErrors = confirmPasswordControl.errors;
-      if (confirmPasswordErrors['required'])
+      if (confirmPasswordControl.errors['required']) {
         errors.push('Debes confirmar la contraseña');
-      if (confirmPasswordErrors['passwordMismatch']) {
+      }
+
+      if (confirmPasswordControl.errors['passwordMismatch']) {
         errors.push('Las contraseñas no coinciden');
       }
     }
@@ -204,8 +292,9 @@ export class RegisterPage implements OnInit {
       const alert = await this.alertController.create({
         header: 'Errores de validación',
         message: errors.join('<br>'),
-        buttons: ['OK'],
+        buttons: ['OK']
       });
+
       await alert.present();
     }
   }
@@ -216,17 +305,19 @@ export class RegisterPage implements OnInit {
       duration: 3000,
       position: 'top',
       color: 'success',
-      icon: 'checkmark-circle-outline',
+      icon: 'checkmark-circle-outline'
     });
+
     await toast.present();
   }
 
   private async showErrorMessage(message: string) {
     const alert = await this.alertController.create({
-      header: 'Error',
-      message: message,
-      buttons: ['OK'],
+      header: 'Error de registro',
+      message,
+      buttons: ['OK']
     });
+
     await alert.present();
   }
 }
