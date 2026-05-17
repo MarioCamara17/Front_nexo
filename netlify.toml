@@ -1,0 +1,8 @@
+[build]
+  command = "npm install -g @ionic/cli && ionic build"
+  publish = "www"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
