@@ -1,12 +1,18 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  Validators,
+  ReactiveFormsModule,
+  AbstractControl,
+} from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { 
-  IonicModule, 
-  AlertController, 
+import {
+  IonicModule,
+  AlertController,
   ToastController,
-  LoadingController
+  LoadingController,
 } from '@ionic/angular';
 import { AuthService } from '../../services/auth/auth.service';
 
@@ -23,12 +29,7 @@ interface User {
   templateUrl: './register.page.html',
   styleUrls: ['./register.page.scss'],
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    IonicModule,
-    RouterModule
-  ]
+  imports: [CommonModule, ReactiveFormsModule, IonicModule, RouterModule],
 })
 export class RegisterPage implements OnInit {
   registerForm!: FormGroup;
@@ -47,7 +48,7 @@ export class RegisterPage implements OnInit {
     private alertController: AlertController,
     private toastController: ToastController,
     private loadingController: LoadingController,
-    private authService: AuthService
+    private authService: AuthService,
   ) {}
 
   ngOnInit() {
@@ -55,30 +56,34 @@ export class RegisterPage implements OnInit {
   }
 
   private initializeForm() {
-    this.registerForm = this.formBuilder.group({
-      firstName: ['', [
-        Validators.required,
-        Validators.pattern(this.namePattern)
-      ]],
-      lastName: ['', [
-        Validators.required,
-        Validators.pattern(this.namePattern)
-      ]],
-      email: ['', [
-        Validators.required,
-        Validators.pattern(this.emailPattern)
-      ]],
-      password: ['', [
-        Validators.required,
-        Validators.minLength(8),
-        Validators.pattern(this.passwordPattern)
-      ]],
-      confirmPassword: ['', [
-        Validators.required
-      ]]
-    }, {
-      validators: this.passwordMatchValidator
-    });
+    this.registerForm = this.formBuilder.group(
+      {
+        firstName: [
+          '',
+          [Validators.required, Validators.pattern(this.namePattern)],
+        ],
+        lastName: [
+          '',
+          [Validators.required, Validators.pattern(this.namePattern)],
+        ],
+        email: [
+          '',
+          [Validators.required, Validators.pattern(this.emailPattern)],
+        ],
+        password: [
+          '',
+          [
+            Validators.required,
+            Validators.minLength(8),
+            Validators.pattern(this.passwordPattern),
+          ],
+        ],
+        confirmPassword: ['', [Validators.required]],
+      },
+      {
+        validators: this.passwordMatchValidator,
+      },
+    );
   }
 
   private passwordMatchValidator(form: FormGroup) {
@@ -99,30 +104,46 @@ export class RegisterPage implements OnInit {
   async onRegister() {
     if (this.registerForm.valid) {
       this.isLoading = true;
-      const loading = await this.loadingController.create({
-        message: 'Registrando usuario...'
-      });
-      await loading.present();
-      
-      try {
-        const userData = {
-          username: this.registerForm.value.email,
-          first_name: this.registerForm.value.firstName,
-          last_name: this.registerForm.value.lastName,
-          email: this.registerForm.value.email,
-          password: this.registerForm.value.password
-        };
 
-        await this.authService.register(userData).toPromise();
-        await this.showSuccessMessage();
-        this.router.navigate(['/login']);
-        
-      } catch (error) {
-        await this.showErrorMessage('Error al registrar usuario. Intenta nuevamente.');
-      } finally {
-        this.isLoading = false;
-        await loading.dismiss();
-      }
+      const loading = await this.loadingController.create({
+        message: 'Registrando usuario...',
+      });
+
+      await loading.present();
+
+      const userData = {
+        username: this.registerForm.value.email,
+        first_name: this.registerForm.value.firstName,
+        last_name: this.registerForm.value.lastName,
+        email: this.registerForm.value.email,
+        password: this.registerForm.value.password,
+      };
+
+      this.authService.register(userData).subscribe({
+        next: async (response) => {
+          console.log('Registro exitoso:', response);
+
+          await loading.dismiss();
+
+          await this.showSuccessMessage();
+
+          this.router.navigate(['/login']);
+        },
+
+        error: async (error) => {
+          console.error('ERROR COMPLETO:', error);
+
+          await loading.dismiss();
+
+          let errorMessage = 'Error al registrar usuario';
+
+          if (error.error) {
+            errorMessage = JSON.stringify(error.error);
+          }
+
+          await this.showErrorMessage(errorMessage);
+        },
+      });
     } else {
       await this.showValidationErrors();
     }
@@ -130,21 +151,23 @@ export class RegisterPage implements OnInit {
 
   private async showValidationErrors() {
     const errors: string[] = [];
-    
+
     const firstNameControl = this.registerForm.get('firstName');
     if (firstNameControl?.errors) {
       const firstNameErrors = firstNameControl.errors;
       if (firstNameErrors['required']) errors.push('El nombre es requerido');
-      if (firstNameErrors['pattern']) errors.push('El nombre solo debe contener letras y espacios');
+      if (firstNameErrors['pattern'])
+        errors.push('El nombre solo debe contener letras y espacios');
     }
-    
+
     const lastNameControl = this.registerForm.get('lastName');
     if (lastNameControl?.errors) {
       const lastNameErrors = lastNameControl.errors;
       if (lastNameErrors['required']) errors.push('El apellido es requerido');
-      if (lastNameErrors['pattern']) errors.push('El apellido solo debe contener letras y espacios');
+      if (lastNameErrors['pattern'])
+        errors.push('El apellido solo debe contener letras y espacios');
     }
-    
+
     const emailControl = this.registerForm.get('email');
     if (emailControl?.errors) {
       const emailErrors = emailControl.errors;
@@ -153,21 +176,25 @@ export class RegisterPage implements OnInit {
         errors.push('El formato del email no es válido');
       }
     }
-    
+
     const passwordControl = this.registerForm.get('password');
     if (passwordControl?.errors) {
       const passwordErrors = passwordControl.errors;
       if (passwordErrors['required']) errors.push('La contraseña es requerida');
-      if (passwordErrors['minlength']) errors.push('La contraseña debe tener al menos 8 caracteres');
+      if (passwordErrors['minlength'])
+        errors.push('La contraseña debe tener al menos 8 caracteres');
       if (passwordErrors['pattern']) {
-        errors.push('La contraseña debe contener al menos una letra y un número');
+        errors.push(
+          'La contraseña debe contener al menos una letra y un número',
+        );
       }
     }
-    
+
     const confirmPasswordControl = this.registerForm.get('confirmPassword');
     if (confirmPasswordControl?.errors) {
       const confirmPasswordErrors = confirmPasswordControl.errors;
-      if (confirmPasswordErrors['required']) errors.push('Debes confirmar la contraseña');
+      if (confirmPasswordErrors['required'])
+        errors.push('Debes confirmar la contraseña');
       if (confirmPasswordErrors['passwordMismatch']) {
         errors.push('Las contraseñas no coinciden');
       }
@@ -177,7 +204,7 @@ export class RegisterPage implements OnInit {
       const alert = await this.alertController.create({
         header: 'Errores de validación',
         message: errors.join('<br>'),
-        buttons: ['OK']
+        buttons: ['OK'],
       });
       await alert.present();
     }
@@ -189,7 +216,7 @@ export class RegisterPage implements OnInit {
       duration: 3000,
       position: 'top',
       color: 'success',
-      icon: 'checkmark-circle-outline'
+      icon: 'checkmark-circle-outline',
     });
     await toast.present();
   }
@@ -198,7 +225,7 @@ export class RegisterPage implements OnInit {
     const alert = await this.alertController.create({
       header: 'Error',
       message: message,
-      buttons: ['OK']
+      buttons: ['OK'],
     });
     await alert.present();
   }
