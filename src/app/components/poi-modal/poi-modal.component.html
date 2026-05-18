@@ -81,6 +81,22 @@
     ></video>
   </div>
 
+  <div class="ar-experience-card" *ngIf="!isRouteContext && hasARExperience()">
+    <div class="ar-experience-info">
+      <span class="ar-badge">RA disponible</span>
+
+      <h3>✨ Experiencia en Realidad Aumentada</h3>
+
+      <p>
+        Explora una experiencia interactiva especial de la Iglesia de colores.
+      </p>
+    </div>
+
+    <button class="ar-button" type="button" (click)="openARExperience()">
+      Ver experiencia RA
+    </button>
+  </div>
+
   <div
     class="detail-sections"
     *ngIf="!isRouteContext && (history || importance || recommendations || schedule || cost || tips)"

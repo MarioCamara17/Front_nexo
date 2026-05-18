@@ -307,6 +307,30 @@ export class PoiModalComponent implements OnInit, OnDestroy {
     }
   }
 
+  hasARExperience(): boolean {
+    if (this.isRouteContext || !this.title) {
+      return false;
+    }
+
+    const normalizedTitle = this.normalizeText(this.title);
+
+    return (
+      normalizedTitle.includes('iglesia') ||
+      normalizedTitle.includes('tila') ||
+      normalizedTitle.includes('colores')
+    );
+  }
+
+  async openARExperience() {
+    await this.stopNarration();
+
+    window.open(
+      'https://steelfenix09.github.io/Innova/index/index.html',
+      '_blank',
+      'noopener,noreferrer'
+    );
+  }
+
   ngOnDestroy(): void {
     this.stopLocalAudio();
     TextToSpeech.stop();
