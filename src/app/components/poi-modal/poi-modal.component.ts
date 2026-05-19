@@ -11,6 +11,13 @@ import { Poi } from 'src/app/models/poi.model';
 import { AuthService } from 'src/app/services/auth/auth.service';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 
+interface ARExperience {
+  badge: string;
+  title: string;
+  description: string;
+  url: string;
+}
+
 @Component({
   selector: 'app-poi-modal',
   templateUrl: './poi-modal.component.html',
@@ -307,25 +314,46 @@ export class PoiModalComponent implements OnInit, OnDestroy {
     }
   }
 
-  hasARExperience(): boolean {
+  getARExperience(): ARExperience | null {
     if (this.isRouteContext || !this.title) {
-      return false;
+      return null;
     }
 
     const normalizedTitle = this.normalizeText(this.title);
 
-    return (
+    if (
       normalizedTitle.includes('iglesia') ||
       normalizedTitle.includes('tila') ||
       normalizedTitle.includes('colores')
-    );
+    ) {
+      return {
+        badge: 'RA disponible',
+        title: '✨ Experiencia en Realidad Aumentada',
+        description: 'Explora una experiencia interactiva especial de la Iglesia de colores.',
+        url: 'https://steelfenix09.github.io/Innova/index/index.html'
+      };
+    }
+
+    if (
+      normalizedTitle.includes('girasol') ||
+      normalizedTitle.includes('girasoles')
+    ) {
+      return {
+        badge: 'RA disponible',
+        title: '🌻 Experiencia interactiva',
+        description: 'Descubre una experiencia especial de la Finca de los girasoles.',
+        url: 'https://steelfenix09.github.io/Los-girasoles/index/index.html'
+      };
+    }
+
+    return null;
   }
 
-  async openARExperience() {
+  async openARExperience(url: string) {
     await this.stopNarration();
 
     window.open(
-      'https://steelfenix09.github.io/Innova/index/index.html',
+      url,
       '_blank',
       'noopener,noreferrer'
     );
