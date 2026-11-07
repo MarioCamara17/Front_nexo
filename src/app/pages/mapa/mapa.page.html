@@ -75,10 +75,13 @@
       </button>
     </div>
 
+    <p *ngIf="assistantNotice" role="status" style="padding: 12px; background: #fff4dc; color: #593f0b; border-radius: 10px;">{{assistantNotice}}</p>
     <div class="map-container">
       <app-leaflet-map
         [pois]="filteredPois"
         [routePois]="routePoisToDisplay"
+        [routeOrigin]="assistantOrigin"
+        (routeStatus)="assistantNotice = $event"
         (poiClicked)="abrirPoiModal($event)"
       >
       </app-leaflet-map>

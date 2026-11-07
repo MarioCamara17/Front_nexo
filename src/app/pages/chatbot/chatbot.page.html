@@ -1,38 +1,129 @@
 <ion-header>
   <ion-toolbar>
-    <ion-title>Chatbot NEXO</ion-title>
+    <ion-title>Asistente NEXO</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content class="chat-content">
-  <div class="messages-container">
-    <div
-      *ngFor="let message of messages"
-      [ngClass]="message.role === 'user' ? 'user-message' : 'bot-message'"
-      class="message-bubble"
+<ion-content>
+  <main class="assistant">
+    <section class="intro">
+      <span>GUÍA INTERACTIVA</span>
+      <h1>Prepara tu próxima visita</h1>
+      <p>
+        Consulta los lugares registrados y explóralos en el mapa.
+      </p>
+    </section>
+
+    <section class="settings" aria-label="Opciones de consulta">
+      <ion-item>
+        <ion-select
+          label="Lugar de interés"
+          labelPlacement="stacked"
+          placeholder="Selecciona un lugar"
+          interface="popover"
+          [(ngModel)]="placeId"
+          [disabled]="placesLoading || loading"
+        >
+          <ion-select-option
+            *ngFor="let poi of pois"
+            [value]="poi.id"
+          >
+            {{ poi.name }}
+          </ion-select-option>
+        </ion-select>
+      </ion-item>
+
+      <p *ngIf="placesLoading" role="status">
+        Cargando lugares…
+      </p>
+
+      <p *ngIf="placesError" role="alert">
+        {{ placesError }}
+        <button type="button" (click)="loadPlaces()">
+          Reintentar
+        </button>
+      </p>
+
+      <ion-item>
+        <ion-select
+          label="Radio de búsqueda"
+          labelPlacement="stacked"
+          [(ngModel)]="radius"
+          [disabled]="loading"
+        >
+          <ion-select-option [value]="1">1 km</ion-select-option>
+          <ion-select-option [value]="5">5 km</ion-select-option>
+          <ion-select-option [value]="10">10 km</ion-select-option>
+          <ion-select-option [value]="25">25 km</ion-select-option>
+          <ion-select-option [value]="100">100 km</ion-select-option>
+        </ion-select>
+      </ion-item>
+    </section>
+
+    <section
+      class="question-groups"
+      aria-label="Preguntas disponibles"
     >
-      {{ message.text }}
-    </div>
+      <div *ngFor="let group of groups">
+        <h2>{{ group.title }}</h2>
 
-    <div *ngIf="loading" class="bot-message message-bubble">
-      Escribiendo...
-    </div>
-  </div>
+        <button
+          type="button"
+          class="question"
+          *ngFor="let question of group.questions"
+          [disabled]="loading"
+          (click)="ask(question.id, question.label)"
+        >
+          {{ question.label }}
+          <span aria-hidden="true">↗</span>
+        </button>
+      </div>
+    </section>
+
+    <section
+      class="messages"
+      aria-label="Conversación"
+      aria-live="polite"
+      [attr.aria-busy]="loading"
+    >
+      <article
+        *ngFor="let message of messages"
+        [class.user]="message.role === 'user'"
+      >
+        <small>
+          {{ message.role === 'bot' ? 'NEXO' : 'Tú' }}
+        </small>
+
+        <p style="white-space: pre-wrap;">{{ message.reply }}</p>
+
+        <button
+          type="button"
+          class="result"
+          *ngFor="let place of message.places"
+          (click)="showPlace(place.id)"
+        >
+          {{ place.name }}
+
+          <span *ngIf="place.distance_km !== undefined">
+            · {{ place.distance_km }} km
+          </span>
+
+          · Ver en mapa
+        </button>
+
+        <button
+          type="button"
+          class="action"
+          *ngFor="let item of message.actions"
+          (click)="action(item)"
+        >
+          {{ item.label }}
+        </button>
+      </article>
+
+      <p *ngIf="loading" role="status">
+        Consultando…
+      </p>
+    </section>
+  </main>
 </ion-content>
-
-<ion-footer>
-  <ion-toolbar>
-    <div class="input-container">
-      <ion-input
-      [(ngModel)]="newMessage"
-      placeholder="Escribe tu mensaje"
-      class="chat-input"
-      (keyup.enter)="sendMessage()"
-      ></ion-input>
-
-      <ion-button (click)="sendMessage()" [disabled]="loading">
-        Enviar
-      </ion-button>
-    </div>
-  </ion-toolbar>
-</ion-footer>

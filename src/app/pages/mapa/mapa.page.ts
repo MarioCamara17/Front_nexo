@@ -44,6 +44,12 @@ export class MapaPage implements OnInit, OnDestroy {
   selectedSavedRoute: CustomRoute | null = null;
   selectedSavedRoutePois: Poi[] = [];
 
+  assistantNotice = '';
+  assistantOrigin: [number, number] | null = null;
+  assistantDestination: Poi | null = null;
+  assistantBusy = false;
+  private pendingAssistant: {type: string; placeId: string; ids: string[]; category: string} | null = null;
+
   private pendingCustomRouteId: string | null = null;
   private queryParamsSubscription?: Subscription;
 
@@ -59,6 +65,12 @@ export class MapaPage implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.queryParamsSubscription = this.activatedRoute.queryParamMap.subscribe(params => {
+      const assistant = params.get('assistant');
+      if (assistant) {
+        this.pendingAssistant = {type: assistant, placeId: params.get('placeId') || '',
+          ids: (params.get('placeIds') || '').split(',').filter(Boolean), category: params.get('category') || ''};
+        this.aplicarAccionAsistente();
+      }
       const customRouteId = params.get('customRouteId');
 
       if (customRouteId) {
@@ -75,6 +87,8 @@ export class MapaPage implements OnInit, OnDestroy {
 
   ionViewWillLeave() {
     this.limpiarRutaActivaSinNavegar();
+    this.assistantOrigin = null;
+    this.assistantDestination = null;
   }
 
   ionViewDidLeave() {
@@ -85,7 +99,59 @@ export class MapaPage implements OnInit, OnDestroy {
     this.queryParamsSubscription?.unsubscribe();
   }
 
+  private async aplicarAccionAsistente() {
+    if (!this.pendingAssistant || this.pois.length === 0) return;
+    const action = this.pendingAssistant;
+    this.pendingAssistant = null;
+    this.assistantOrigin = null;
+    this.assistantDestination = null;
+    this.assistantNotice = '';
+    this.limpiarRutaActivaSinNavegar();
+    this.isCreatingRoute = false;
+    this.customRoute = [];
+    this.aplicarFiltro('Todos');
+    // Se consume una sola vez, incluso con el caché de páginas de Ionic.
+    void this.router.navigate([], {relativeTo: this.activatedRoute, queryParams: {}, replaceUrl: true});
+    if (action.type === 'filter') {
+      this.aplicarFiltro(action.category);
+      this.assistantNotice = `Categoría: ${action.category}`;
+    } else if (action.type === 'places') {
+      this.filteredPois = this.pois.filter(p => action.ids.includes(p.id));
+      this.assistantNotice = 'Lugares encontrados por el asistente. Pulsa Todos para restaurar el mapa.';
+    } else if (action.type === 'itinerary') {
+      this.customRoute = action.ids.map(id => this.pois.find(p => p.id === id)).filter((p): p is Poi => !!p);
+      this.isCreatingRoute = true;
+      this.isRouteOptimized = false;
+      this.actualizarDistanciaRuta();
+      this.assistantNotice = 'Recorrido sugerido. Revisa las paradas y los horarios; puedes editarlo y guardarlo.';
+    } else if (action.type === 'map') {
+      this.toggleRouteCreation();
+    } else {
+      const poi = this.pois.find(p => p.id === action.placeId);
+      if (!poi) { this.assistantNotice = 'El lugar ya no está disponible.'; return; }
+      this.selectedPoi = poi;
+      if (action.type === 'directions') {
+        this.assistantBusy = true;
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            if (!navigator.geolocation) { reject(new Error('Ubicación no disponible')); return; }
+            navigator.geolocation.getCurrentPosition(resolve, reject, {enableHighAccuracy: true, timeout: 15000, maximumAge: 60000});
+          });
+          this.assistantOrigin = [position.coords.latitude, position.coords.longitude];
+          this.assistantDestination = poi;
+          this.assistantNotice = 'Calculando recorrido por carretera…';
+        } catch {
+          this.assistantNotice = 'No pude obtener la ubicación. Revisa el permiso y usa HTTPS o localhost.';
+        } finally { this.assistantBusy = false; }
+      } else {
+        this.filteredPois = [poi];
+        this.assistantNotice = `Lugar seleccionado: ${poi.name}. Pulsa Ver más para abrir su ficha.`;
+      }
+    }
+  }
+
   get routePoisToDisplay(): Poi[] {
+    if (this.assistantDestination) return [this.assistantDestination];
     if (this.isCreatingRoute) {
       return this.customRoute;
     }
@@ -98,6 +164,7 @@ export class MapaPage implements OnInit, OnDestroy {
       next: (pois) => {
         this.pois = pois;
         this.aplicarFiltro(this.currentFilter);
+        this.aplicarAccionAsistente();
       },
       error: (err) => {
         console.error('Error cargando POIs:', err);
@@ -135,6 +202,8 @@ export class MapaPage implements OnInit, OnDestroy {
   }
 
   mostrarRutaGuardada(route: CustomRoute) {
+    this.assistantOrigin = null;
+    this.assistantDestination = null;
     this.isCreatingRoute = false;
     this.customRoute = [];
     this.totalDistanceKm = 0;
@@ -254,6 +323,8 @@ export class MapaPage implements OnInit, OnDestroy {
   }
 
   toggleRouteCreation() {
+    this.assistantOrigin = null;
+    this.assistantDestination = null;
     this.isCreatingRoute = !this.isCreatingRoute;
 
     if (this.isCreatingRoute) {

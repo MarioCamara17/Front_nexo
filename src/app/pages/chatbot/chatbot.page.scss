@@ -1,43 +1,21 @@
-.chat-content {
-  --padding-start: 12px;
-  --padding-end: 12px;
-  --padding-top: 12px;
-  --padding-bottom: 12px;
-}
-
-.messages-container {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.message-bubble {
-  max-width: 80%;
-  padding: 10px 14px;
-  border-radius: 14px;
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-.user-message {
-  align-self: flex-end;
-  background: #3880ff;
-  color: white;
-}
-
-.bot-message {
-  align-self: flex-start;
-  background: #f1f1f1;
-  color: #222;
-}
-
-.input-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-}
-
-.chat-input {
-  flex: 1;
-}
+:host { --nexo: #0f766e; }
+ion-content { --background: #f3f7f6; }
+.assistant { max-width: 850px; margin: auto; padding: 24px 16px 100px; color: #173b39; }
+.intro { background: #113e3a; color: white; padding: 28px; border-radius: 22px; margin-bottom: 20px; }
+.intro span { font-size: 11px; letter-spacing: 2px; color: #a6e6cb; }
+h1 { font-size: 28px; margin: 12px 0; } h2 { font-size: 16px; margin: 24px 0 10px; }
+.settings { border-radius: 16px; background: white; padding: 12px; }
+.preferences { display: grid; grid-template-columns: 1fr 1fr; }
+.question-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+button { font: inherit; cursor: pointer; text-align: left; }
+button:focus-visible { outline: 3px solid #d97706; outline-offset: 3px; }
+button:disabled { cursor: wait; opacity: .55; }
+.question { display: flex; justify-content: space-between; gap: 12px; width: 100%; background: white; color: #173b39; border: 1px solid #d5e5df; border-radius: 12px; padding: 14px; margin-bottom: 8px; line-height: 1.45; }
+.question span { color: var(--nexo); }
+.messages { margin-top: 28px; display: flex; flex-direction: column; gap: 14px; }
+article { background: white; border: 1px solid #d5e5df; padding: 18px; border-radius: 16px; width: 94%; }
+article.user { align-self: flex-end; background: #dceee7; }
+article small { font-weight: bold; } article p { white-space: pre-wrap; line-height: 1.65; margin: 8px 0; }
+.result, .action { display: block; width: 100%; padding: 12px; border-radius: 8px; margin-top: 8px; color: #0d514c; background: #edf7f3; border: 1px solid #c7e3d8; }
+.action { background: var(--nexo); color: white; }
+@media (max-width: 580px) { .question-groups, .preferences { grid-template-columns: 1fr; } .intro {padding: 22px;} }

@@ -37,6 +37,8 @@ interface OsrmRouteResponse {
 export class LeafletMapComponent implements OnInit, OnChanges {
   @Input() pois: Poi[] = [];
   @Input() routePois: Poi[] = [];
+  @Input() routeOrigin: [number, number] | null = null;
+  @Output() routeStatus = new EventEmitter<string>();
 
   @Output() poiClicked = new EventEmitter<Poi>();
 
@@ -81,7 +83,7 @@ export class LeafletMapComponent implements OnInit, OnChanges {
       this.addMarkers();
     }
 
-    if (changes['routePois'] && this.mapInitialized && this.map) {
+    if ((changes['routePois'] || changes['routeOrigin']) && this.mapInitialized && this.map) {
       this.updateRouteLine();
     }
   }
@@ -161,17 +163,18 @@ export class LeafletMapComponent implements OnInit, OnChanges {
   private async updateRouteLine() {
     if (!this.map) return;
 
+    const requestId = ++this.currentRouteRequest;
     this.clearRouteLine();
 
-    if (!this.routePois || this.routePois.length < 2) {
+    if (!this.routePois || this.routePois.length + (this.routeOrigin ? 1 : 0) < 2) {
       return;
     }
-
-    const requestId = ++this.currentRouteRequest;
 
     const directCoordinates = this.routePois
       .map((poi) => this.getPoiCoordinates(poi))
       .filter((coords): coords is [number, number] => coords !== null);
+
+    if (this.routeOrigin) directCoordinates.unshift(this.routeOrigin);
 
     if (directCoordinates.length < 2) {
       return;
@@ -184,6 +187,7 @@ export class LeafletMapComponent implements OnInit, OnChanges {
         return;
       }
 
+      this.routeStatus.emit("Recorrido por carretera. No es una ruta peatonal ni garantiza accesibilidad.");
       this.drawRouteLine(roadCoordinates, false);
       this.addRouteOrderMarkers();
       this.fitRouteBounds(roadCoordinates);
@@ -194,6 +198,7 @@ export class LeafletMapComponent implements OnInit, OnChanges {
         return;
       }
 
+      this.routeStatus.emit("No se pudo consultar la carretera: la línea punteada solo une ubicaciones y no sirve como indicación de navegación.");
       this.drawRouteLine(directCoordinates, true);
       this.addRouteOrderMarkers();
       this.fitRouteBounds(directCoordinates);
@@ -209,7 +214,11 @@ export class LeafletMapComponent implements OnInit, OnChanges {
       `https://router.project-osrm.org/route/v1/driving/${coordinatesForOsrm}` +
       `?overview=full&geometries=geojson&steps=false`;
 
-    const response = await fetch(url);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    let response: Response;
+    try { response = await fetch(url, {signal: controller.signal}); }
+    finally { clearTimeout(timer); }
 
     if (!response.ok) {
       throw new Error(`OSRM respondió con estado ${response.status}`);

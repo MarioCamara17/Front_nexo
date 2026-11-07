@@ -92,3 +92,4 @@ media/
 # 📦 MIGRACIONES (opcional si trabajan en equipo)
 # */migrations/
 # !*/migrations/__init__.py
+/src.zip
