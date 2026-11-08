@@ -678,10 +678,8 @@ export class MapaPage implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.isRouteOptimized) {
-      this.optimizarRuta();
-    }
-
+    // Respetar el orden que seleccionó o ajustó manualmente el visitante.
+    // El reordenamiento es voluntario mediante «Ordenar paradas».
     const alert = await this.alertController.create({
       header: 'Guardar recorrido',
       message: `La ruta contiene ${this.customRoute.length} paradas. La estimación en línea recta es de ${this.totalDistanceKm} km; la distancia real puede ser mayor. El perfil de desplazamiento no se guarda todavía en la base de datos.`,
