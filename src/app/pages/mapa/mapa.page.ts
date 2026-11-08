@@ -18,6 +18,8 @@ import {
 import { GamificationService } from 'src/app/services/gamification/gamification.service';
 import { Poi } from 'src/app/models/poi.model';
 import { PoiModalComponent } from 'src/app/components/poi-modal/poi-modal.component';
+import { MapPoint, MapStyle, TravelMode } from 'src/app/services/map-routing.service';
+import { RoutePresentation } from 'src/app/components/leaflet-map/leaflet-map.component';
 
 @Component({
   selector: 'app-mapa',
@@ -33,6 +35,117 @@ export class MapaPage implements OnInit, OnDestroy {
   filteredPois: Poi[] = [];
   selectedPoi: Poi | null = null;
   currentFilter = 'Todos';
+
+  travelMode: TravelMode = 'car';
+  mapStyle: MapStyle = 'street';
+  myCoordinates: MapPoint | null = null;
+  myAccuracy: number | null = null;
+  isLocating = false;
+  pickLocationMode = false;
+  startFromMyLocation = false;
+  locationNotice = '';
+  routePresentation: RoutePresentation = {
+    distanceKm: null, durationMinutes: null, isEstimated: false, note: ''
+  };
+  searchText = '';
+
+  get visiblePoisCount(): number { return this.filteredPois.length; }
+  get selectedOrigin(): MapPoint | null {
+    if (this.assistantOrigin) return this.assistantOrigin;
+    return this.startFromMyLocation && this.myCoordinates && this.routePoisToDisplay.length
+      ? this.myCoordinates : null;
+  }
+
+  onRouteInfo(info: RoutePresentation): void {
+    this.routePresentation = info;
+  }
+
+  changeTravelMode(mode: TravelMode): void {
+    this.travelMode = mode;
+    this.isRouteOptimized = false;
+  }
+
+  changeMapStyle(style: MapStyle): void {
+    this.mapStyle = style;
+  }
+
+  async locateMe(): Promise<void> {
+    if (this.isLocating) return;
+    this.isLocating = true;
+    this.pickLocationMode = false;
+    this.locationNotice = 'Consultando tu ubicación…';
+
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error('Geolocalización no disponible en este navegador.'));
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: false, timeout: 20000, maximumAge: 60000
+        });
+      });
+      this.myCoordinates = [pos.coords.latitude, pos.coords.longitude];
+      this.myAccuracy = pos.coords.accuracy;
+      this.locationNotice = 'Ubicación aproximada obtenida. Precisión: ±' +
+        Math.round(pos.coords.accuracy) + ' m.';
+      setTimeout(() => this.leafletMap?.centrarUbicacion(), 100);
+    } catch (error: unknown) {
+      const geo = error as { code?: number; message?: string };
+      const description = geo.code === 1
+        ? 'El dispositivo o navegador rechazó la ubicación. Usa «Elegir en el mapa».'
+        : geo.code === 3
+          ? 'El GPS tardó demasiado. Intenta otra vez o elige un punto en el mapa.'
+          : 'No se pudo determinar la ubicación. Puedes elegirla manualmente en el mapa.';
+      this.locationNotice = description;
+    } finally {
+      this.isLocating = false;
+    }
+  }
+
+  enableLocationPicking(): void {
+    this.pickLocationMode = !this.pickLocationMode;
+    this.locationNotice = this.pickLocationMode
+      ? 'Selecciona un punto del mapa. Se utilizará como referencia, no como GPS real.'
+      : '';
+  }
+
+  onLocationPicked(coords: MapPoint): void {
+    this.myCoordinates = coords;
+    this.myAccuracy = null;
+    this.pickLocationMode = false;
+    this.locationNotice = 'Ubicación de referencia seleccionada en el mapa.';
+    setTimeout(() => this.leafletMap?.centrarUbicacion(), 50);
+  }
+
+  clearMyLocation(): void {
+    this.myCoordinates = null;
+    this.myAccuracy = null;
+    this.startFromMyLocation = false;
+    this.pickLocationMode = false;
+    this.locationNotice = 'Ubicación eliminada del mapa.';
+  }
+
+  applySearch(): void {
+    this.aplicarFiltro(this.currentFilter);
+  }
+
+  private matchesSearch(poi: Poi): boolean {
+    const q = this.searchText.toLocaleLowerCase('es').trim();
+    if (!q) return true;
+    return [poi.name, poi.description, poi.municipality?.name, poi.category?.name]
+      .some(item => (item || '').toLocaleLowerCase('es').includes(q));
+  }
+
+  moveStop(index: number, direction: number): void {
+    const next = index + direction;
+    if (!this.isCreatingRoute || next < 0 || next >= this.customRoute.length) return;
+    const copy = [...this.customRoute];
+    [copy[index], copy[next]] = [copy[next], copy[index]];
+    this.customRoute = copy;
+    this.isRouteOptimized = false;
+    this.actualizarDistanciaRuta();
+  }
 
   isCreatingRoute = false;
   isSavingRoute = false;
@@ -87,6 +200,7 @@ export class MapaPage implements OnInit, OnDestroy {
 
   ionViewWillLeave() {
     this.limpiarRutaActivaSinNavegar();
+    this.pickLocationMode = false;
     this.assistantOrigin = null;
     this.assistantDestination = null;
   }
@@ -373,6 +487,8 @@ export class MapaPage implements OnInit, OnDestroy {
       return;
     }
 
+    // Orden estimado por distancia geográfica. No constituye optimización por calles.
+    // El componente Leaflet calcula posteriormente el recorrido sobre la red vial.
     this.customRoute = this.getOptimizedRoute(validRoute);
     this.isRouteOptimized = true;
     this.actualizarDistanciaRuta();
@@ -566,8 +682,8 @@ export class MapaPage implements OnInit, OnDestroy {
     }
 
     const alert = await this.alertController.create({
-      header: 'Guardar ruta óptima',
-      message: `La ruta tiene ${this.customRoute.length} paradas y una distancia aproximada de ${this.totalDistanceKm} km.`,
+      header: 'Guardar recorrido',
+      message: `La ruta contiene ${this.customRoute.length} paradas. La estimación en línea recta es de ${this.totalDistanceKm} km; la distancia real puede ser mayor. El perfil de desplazamiento no se guarda todavía en la base de datos.`,
       inputs: [
         {
           name: 'name',
@@ -643,7 +759,7 @@ export class MapaPage implements OnInit, OnDestroy {
 
         this.mostrarAlerta(
           'Ruta guardada',
-          'Tu ruta óptima se guardó correctamente y se agregaron puntos a tu perfil.'
+          'Tu recorrido fue guardado. La modalidad y el trazado deberán volver a calcularse al abrirlo.'
         );
       },
       error: (error: unknown) => {
@@ -691,10 +807,11 @@ export class MapaPage implements OnInit, OnDestroy {
     this.currentFilter = tipo;
 
     if (tipo === 'Todos') {
-      this.filteredPois = [...this.pois];
+      this.filteredPois = this.pois.filter(p => this.matchesSearch(p));
     } else {
       this.filteredPois = this.pois.filter(
-        (poi) => poi.category.name.toLowerCase() === tipo.toLowerCase()
+        (poi) => (poi.category?.name || '').toLowerCase() === tipo.toLowerCase() &&
+          this.matchesSearch(poi)
       );
     }
 
