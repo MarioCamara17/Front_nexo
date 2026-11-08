@@ -1,29 +1,19 @@
 import {
-  Component,
-  OnInit,
-  Input,
-  OnChanges,
-  SimpleChanges,
-  Output,
-  EventEmitter,
-  NgZone
+  Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy,
+  SimpleChanges, NgZone
 } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import * as L from 'leaflet';
 import { Poi } from 'src/app/models/poi.model';
-import { CommonModule } from '@angular/common';
-import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import {
+  MapRoutingService, TravelMode, MapStyle, MapPoint, CalculatedRoute
+} from 'src/app/services/map-routing.service';
 
-interface OsrmRouteResponse {
-  code: string;
-  message?: string;
-  routes?: Array<{
-    distance: number;
-    duration: number;
-    geometry: {
-      type: string;
-      coordinates: [number, number][];
-    };
-  }>;
+export interface RoutePresentation {
+  distanceKm: number | null;
+  durationMinutes: number | null;
+  isEstimated: boolean;
+  note: string;
 }
 
 @Component({
@@ -31,288 +21,284 @@ interface OsrmRouteResponse {
   templateUrl: './leaflet-map.component.html',
   styleUrls: ['./leaflet-map.component.scss'],
   standalone: true,
-  imports: [CommonModule],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA]
+  imports: [CommonModule]
 })
-export class LeafletMapComponent implements OnInit, OnChanges {
+export class LeafletMapComponent implements OnInit, OnChanges, OnDestroy {
   @Input() pois: Poi[] = [];
   @Input() routePois: Poi[] = [];
-  @Input() routeOrigin: [number, number] | null = null;
-  @Output() routeStatus = new EventEmitter<string>();
-
+  @Input() routeOrigin: MapPoint | null = null;
+  @Input() travelMode: TravelMode = 'car';
+  @Input() mapStyle: MapStyle = 'street';
+  @Input() userCoordinates: MapPoint | null = null;
+  @Input() userAccuracy: number | null = null;
   @Output() poiClicked = new EventEmitter<Poi>();
+  @Output() routeStatus = new EventEmitter<string>();
+  @Output() routeInfo = new EventEmitter<RoutePresentation>();
 
-  map: L.Map | undefined;
+  map?: L.Map;
+  mapInitialized = false;
 
   private markers: L.Marker[] = [];
   private routeLine: L.Polyline | null = null;
   private routeOrderMarkers: L.Marker[] = [];
+  private userMarker: L.CircleMarker | null = null;
+  private accuracyCircle: L.Circle | null = null;
   private currentRouteRequest = 0;
+  private abortRoute?: AbortController;
+  private backgroundLayer?: L.TileLayer;
+  private initialFitDone = false;
+  private lastRouteCoordinates: MapPoint[] = [];
 
-  mapInitialized = false;
+  constructor(private ngZone: NgZone, private routing: MapRoutingService) {}
 
-  constructor(private ngZone: NgZone) {}
-
-  ngOnInit() {
+  ngOnInit(): void {
+    // Ref independiente por componente; evita conflictos con mapas adicionales.
     setTimeout(() => {
-      this.map = L.map('mapId', {
-        zoomControl: true
-      }).setView([17.8409, -92.6189], 8);
-
-      L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(this.map);
-
+      if (this.map) return;
+      this.map = L.map('mapId', { zoomControl: false, preferCanvas: true })
+        .setView([17.8409, -92.6189], 8);
+      L.control.zoom({ position: 'bottomright' }).addTo(this.map);
+      L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(this.map);
+      this.setBaseLayer();
       this.mapInitialized = true;
-
-      if (this.pois.length > 0) {
-        this.addMarkers();
-      }
-
-      this.updateRouteLine();
-
-      setTimeout(() => {
-        this.map?.invalidateSize();
-      }, 400);
+      this.addMarkers();
+      this.updateLocationMarker();
+      void this.updateRouteLine();
+      setTimeout(() => this.map?.invalidateSize(), 300);
     }, 0);
   }
 
-  ngOnChanges(changes: SimpleChanges) {
-    if (changes['pois'] && this.mapInitialized && this.map) {
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!this.mapInitialized || !this.map) return;
+    if (changes['mapStyle']) this.setBaseLayer();
+    if (changes['pois']) {
       this.clearMarkers();
       this.addMarkers();
     }
-
-    if ((changes['routePois'] || changes['routeOrigin']) && this.mapInitialized && this.map) {
-      this.updateRouteLine();
+    if (changes['userCoordinates'] || changes['userAccuracy']) {
+      this.updateLocationMarker();
+    }
+    if (changes['routePois'] || changes['routeOrigin'] || changes['travelMode']) {
+      void this.updateRouteLine();
     }
   }
 
-  private getIconByCategory(_poi: Poi): L.Icon {
-    return L.icon({
-      iconUrl: 'assets/icon/poi_icon.svg',
-      iconRetinaUrl: 'assets/icon/poi_icon.svg',
-      shadowUrl: '',
-      iconSize: [36, 36],
-      iconAnchor: [18, 36],
-      popupAnchor: [0, -30]
-    });
+  ngOnDestroy(): void {
+    ++this.currentRouteRequest;
+    this.abortRoute?.abort();
+    this.map?.remove();
+    this.map = undefined;
+    this.mapInitialized = false;
   }
 
-  private getPoiCoordinates(poi: Poi): [number, number] | null {
-    const lat = parseFloat(poi.latitude);
-    const lng = parseFloat(poi.longitude);
-
-    if (isNaN(lat) || isNaN(lng)) {
-      return null;
-    }
-
-    return [lat, lng];
-  }
-
-  private addMarkers() {
+  private setBaseLayer(): void {
     if (!this.map) return;
-
-    this.pois.forEach((poi) => {
-      const coords = this.getPoiCoordinates(poi);
-
-      if (!coords) {
-        console.warn('POI con coordenadas inválidas:', poi.name, poi.latitude, poi.longitude);
-        return;
+    if (this.backgroundLayer) this.map.removeLayer(this.backgroundLayer);
+    const isTopo = this.mapStyle === 'terrain';
+    this.backgroundLayer = L.tileLayer(
+      isTopo
+        ? 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
+        : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {
+        maxZoom: isTopo ? 17 : 19,
+        attribution: isTopo
+          ? '&copy; OpenStreetMap contributors, SRTM | &copy; OpenTopoMap (CC-BY-SA)'
+          : '&copy; OpenStreetMap contributors'
       }
+    ).addTo(this.map);
+  }
 
-      const marker = L.marker(coords, {
-        icon: this.getIconByCategory(poi)
-      }).addTo(this.map!);
+  private getPoiCoordinates(poi: Poi): MapPoint | null {
+    const lat = Number(poi.latitude);
+    const lon = Number(poi.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) ||
+        Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
+    return [lat, lon];
+  }
 
-      marker.bindTooltip(
-        `
-        <div style="text-align:center;">
-          <strong>${poi.name}</strong><br>
-          <small>${poi.category?.name || 'Turismo'}</small><br>
-          ⭐ +50 pts
-        </div>
-        `,
-        {
-          direction: 'top',
-          offset: [0, -20]
-        }
-      );
+  private addMarkers(): void {
+    if (!this.map) return;
+    for (const poi of this.pois) {
+      const coords = this.getPoiCoordinates(poi);
+      if (!coords) continue;
 
-      marker.on('click', () => {
-        this.ngZone.run(() => {
-          this.poiClicked.emit(poi);
-        });
+      const icon = L.icon({
+        iconUrl: 'assets/icon/poi_icon.svg',
+        iconRetinaUrl: 'assets/icon/poi_icon.svg',
+        iconSize: [36, 36],
+        iconAnchor: [18, 36],
+        popupAnchor: [0, -30]
       });
-
-      marker.on('touchend', () => {
-        this.ngZone.run(() => {
-          this.poiClicked.emit(poi);
-        });
-      });
-
+      const marker = L.marker(coords, { icon }).addTo(this.map);
+      // Crear nodos de texto impide insertar HTML no confiable del catálogo.
+      const tooltip = document.createElement('div');
+      const name = document.createElement('strong');
+      name.textContent = poi.name;
+      const category = document.createElement('small');
+      category.textContent = poi.category?.name || 'Turismo';
+      tooltip.append(name, document.createElement('br'), category);
+      marker.bindTooltip(tooltip, { direction: 'top', offset: [0, -20] });
+      marker.on('click', () => this.ngZone.run(() => this.poiClicked.emit(poi)));
       this.markers.push(marker);
-    });
+    }
 
-    if (this.markers.length > 0 && this.routePois.length === 0) {
-      const group = L.featureGroup(this.markers);
-      this.map.fitBounds(group.getBounds(), { padding: [30, 30] });
+    if (!this.initialFitDone && this.markers.length && !this.routePois.length) {
+      this.initialFitDone = true;
+      const bounds = L.featureGroup(this.markers).getBounds();
+      this.map.fitBounds(bounds, { padding: [28, 28], maxZoom: 11 });
     }
   }
 
-  private async updateRouteLine() {
+  private clearMarkers(): void {
+    for (const marker of this.markers) this.map?.removeLayer(marker);
+    this.markers = [];
+  }
+
+  private updateLocationMarker(): void {
     if (!this.map) return;
+    if (this.userMarker) this.map.removeLayer(this.userMarker);
+    if (this.accuracyCircle) this.map.removeLayer(this.accuracyCircle);
+    this.userMarker = null;
+    this.accuracyCircle = null;
 
+    const coords = this.userCoordinates;
+    if (!coords) return;
+    if (this.userAccuracy && Number.isFinite(this.userAccuracy) && this.userAccuracy > 0) {
+      this.accuracyCircle = L.circle(coords, {
+        radius: Math.min(this.userAccuracy, 100000),
+        color: '#0c83bf',
+        fillColor: '#38bdf8',
+        fillOpacity: 0.12,
+        weight: 1
+      }).addTo(this.map);
+    }
+    this.userMarker = L.circleMarker(coords, {
+      radius: 9,
+      color: '#ffffff',
+      weight: 3,
+      fillColor: '#087dcc',
+      fillOpacity: 1
+    }).addTo(this.map);
+    this.userMarker.bindTooltip('Tu ubicación aproximada');
+  }
+
+  centrarUbicacion(): void {
+    if (this.map && this.userCoordinates) {
+      this.map.flyTo(this.userCoordinates, 14, { duration: 0.7 });
+    }
+  }
+
+  centrarTodos(): void {
+    if (!this.map) return;
+    const points: MapPoint[] = this.pois
+      .map(p => this.getPoiCoordinates(p))
+      .filter((p): p is MapPoint => p !== null);
+    if (this.userCoordinates) points.push(this.userCoordinates);
+    if (points.length) this.map.fitBounds(L.latLngBounds(points), { padding: [35, 35], maxZoom: 11 });
+  }
+
+  centrarRuta(): void {
+    if (!this.map || this.lastRouteCoordinates.length < 2) return;
+    this.fitRouteBounds(this.lastRouteCoordinates);
+  }
+
+  private async updateRouteLine(): Promise<void> {
+    if (!this.map) return;
     const requestId = ++this.currentRouteRequest;
+    this.abortRoute?.abort();
+    this.abortRoute = undefined;
     this.clearRouteLine();
+    this.lastRouteCoordinates = [];
+    this.routeInfo.emit({ distanceKm: null, durationMinutes: null, isEstimated: false, note: '' });
 
-    if (!this.routePois || this.routePois.length + (this.routeOrigin ? 1 : 0) < 2) {
+    const stops = this.routePois
+      .map(p => this.getPoiCoordinates(p))
+      .filter((p): p is MapPoint => p !== null);
+    if (this.routeOrigin) stops.unshift(this.routeOrigin);
+    if (stops.length < 2) {
+      this.routeStatus.emit('');
+      return;
+    }
+    if (stops.length > 12) {
+      this.routeStatus.emit('Máximo 12 paradas por consulta. Reduce los puntos para calcular un recorrido.');
+      this.drawApproximateLine(stops);
       return;
     }
 
-    const directCoordinates = this.routePois
-      .map((poi) => this.getPoiCoordinates(poi))
-      .filter((coords): coords is [number, number] => coords !== null);
-
-    if (this.routeOrigin) directCoordinates.unshift(this.routeOrigin);
-
-    if (directCoordinates.length < 2) {
-      return;
-    }
+    this.routeStatus.emit('Calculando recorrido en el modo seleccionado…');
+    const controller = new AbortController();
+    this.abortRoute = controller;
 
     try {
-      const roadCoordinates = await this.getRoadRouteFromOsrm(directCoordinates);
-
-      if (requestId !== this.currentRouteRequest) {
-        return;
-      }
-
-      this.routeStatus.emit("Recorrido por carretera. No es una ruta peatonal ni garantiza accesibilidad.");
-      this.drawRouteLine(roadCoordinates, false);
+      const result: CalculatedRoute = await this.routing.calculate(stops, this.travelMode, controller.signal);
+      if (requestId !== this.currentRouteRequest) return;
+      this.lastRouteCoordinates = result.coordinates;
+      this.routeLine = L.polyline(result.coordinates, {
+        color: this.travelMode === 'foot' ? '#8b5cf6' :
+               this.travelMode === 'bicycle' ? '#0c82a7' :
+               this.travelMode === 'secondary' ? '#b76f0f' : '#0f766e',
+        weight: 6, opacity: 0.92, lineCap: 'round', lineJoin: 'round'
+      }).addTo(this.map!);
       this.addRouteOrderMarkers();
-      this.fitRouteBounds(roadCoordinates);
-    } catch (error) {
-      console.warn('No se pudo obtener ruta por carretera. Usando línea directa:', error);
-
-      if (requestId !== this.currentRouteRequest) {
-        return;
-      }
-
-      this.routeStatus.emit("No se pudo consultar la carretera: la línea punteada solo une ubicaciones y no sirve como indicación de navegación.");
-      this.drawRouteLine(directCoordinates, true);
-      this.addRouteOrderMarkers();
-      this.fitRouteBounds(directCoordinates);
+      this.fitRouteBounds(result.coordinates);
+      this.ngZone.run(() => {
+        this.routeInfo.emit({
+          distanceKm: result.distanceKm,
+          durationMinutes: result.durationMinutes,
+          isEstimated: false,
+          note: result.note
+        });
+        this.routeStatus.emit(result.note);
+      });
+    } catch (err) {
+      if (requestId !== this.currentRouteRequest) return;
+      console.warn('NEXO: no se pudo calcular la ruta:', err);
+      this.drawApproximateLine(stops);
+      this.ngZone.run(() => {
+        const note = 'No hay un recorrido verificable para este perfil. Línea punteada = conexión visual, NO camino transitable ni indicación para navegar.';
+        this.routeStatus.emit(note);
+        this.routeInfo.emit({
+          distanceKm: null, durationMinutes: null, isEstimated: true, note
+        });
+      });
     }
   }
 
-  private async getRoadRouteFromOsrm(routeCoordinates: [number, number][]): Promise<[number, number][]> {
-    const coordinatesForOsrm = routeCoordinates
-      .map(([lat, lng]) => `${lng},${lat}`)
-      .join(';');
-
-    const url =
-      `https://router.project-osrm.org/route/v1/driving/${coordinatesForOsrm}` +
-      `?overview=full&geometries=geojson&steps=false`;
-
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 15000);
-    let response: Response;
-    try { response = await fetch(url, {signal: controller.signal}); }
-    finally { clearTimeout(timer); }
-
-    if (!response.ok) {
-      throw new Error(`OSRM respondió con estado ${response.status}`);
-    }
-
-    const data = (await response.json()) as OsrmRouteResponse;
-
-    if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) {
-      throw new Error(data.message || 'OSRM no devolvió una ruta válida');
-    }
-
-    const geometry = data.routes[0].geometry.coordinates;
-
-    return geometry.map(([lng, lat]) => [lat, lng]);
-  }
-
-  private drawRouteLine(routeCoordinates: [number, number][], isFallback: boolean) {
+  private drawApproximateLine(stops: MapPoint[]): void {
     if (!this.map) return;
-
-    this.routeLine = L.polyline(routeCoordinates, {
-      color: isFallback ? '#d97706' : '#0f766e',
-      weight: 6,
-      opacity: 0.92,
-      lineCap: 'round',
-      lineJoin: 'round',
-      dashArray: isFallback ? '8, 8' : undefined
+    this.lastRouteCoordinates = stops;
+    this.routeLine = L.polyline(stops, {
+      color: '#dc2626', weight: 4, dashArray: '5, 10', opacity: 0.85
     }).addTo(this.map);
+    this.addRouteOrderMarkers();
+    this.fitRouteBounds(stops);
   }
 
-  private addRouteOrderMarkers() {
+  private addRouteOrderMarkers(): void {
     if (!this.map) return;
-
     this.routePois.forEach((poi, index) => {
       const coords = this.getPoiCoordinates(poi);
       if (!coords) return;
-
-      const orderIcon = L.divIcon({
+      const icon = L.divIcon({
         className: 'route-order-marker',
-        html: `<div>${index + 1}</div>`,
-        iconSize: [30, 30],
-        iconAnchor: [15, 15]
+        html: '<div>' + (index + 1) + '</div>',
+        iconSize: [30, 30], iconAnchor: [15, 15]
       });
-
-      const orderMarker = L.marker(coords, {
-        icon: orderIcon,
-        interactive: false
-      }).addTo(this.map!);
-
-      this.routeOrderMarkers.push(orderMarker);
+      this.routeOrderMarkers.push(L.marker(coords, { icon, interactive: false }).addTo(this.map!));
     });
   }
 
-  private fitRouteBounds(routeCoordinates: [number, number][]) {
-    if (!this.map || routeCoordinates.length < 2) return;
-
-    const bounds = L.latLngBounds(routeCoordinates);
-
-    this.map.fitBounds(bounds, {
-      padding: [70, 70],
-      maxZoom: 13
+  private fitRouteBounds(points: MapPoint[]): void {
+    this.map?.fitBounds(L.latLngBounds(points), {
+      padding: [55, 55],
+      maxZoom: 14
     });
   }
 
-  private clearRouteLine() {
-    if (!this.map) return;
-
-    if (this.routeLine) {
-      this.map.removeLayer(this.routeLine);
-      this.routeLine = null;
-    }
-
-    this.routeOrderMarkers.forEach((marker) => {
-      this.map?.removeLayer(marker);
-    });
-
+  private clearRouteLine(): void {
+    if (this.routeLine) this.map?.removeLayer(this.routeLine);
+    this.routeLine = null;
+    for (const marker of this.routeOrderMarkers) this.map?.removeLayer(marker);
     this.routeOrderMarkers = [];
-  }
-
-  centrarRuta() {
-    if (!this.map || !this.routePois || this.routePois.length < 2) return;
-
-    const routeCoordinates = this.routePois
-      .map((poi) => this.getPoiCoordinates(poi))
-      .filter((coords): coords is [number, number] => coords !== null);
-
-    if (routeCoordinates.length < 2) return;
-
-    this.fitRouteBounds(routeCoordinates);
-  }
-
-  private clearMarkers() {
-    if (!this.map) return;
-
-    this.markers.forEach((marker) => this.map?.removeLayer(marker));
-    this.markers = [];
   }
 }
