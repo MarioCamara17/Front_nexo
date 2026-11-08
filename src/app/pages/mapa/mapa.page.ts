@@ -48,6 +48,7 @@ export class MapaPage implements OnInit, OnDestroy {
     distanceKm: null, durationMinutes: null, isEstimated: false, note: ''
   };
   searchText = '';
+  showMapOptions = false;
 
   get visiblePoisCount(): number { return this.filteredPois.length; }
   get selectedOrigin(): MapPoint | null {
