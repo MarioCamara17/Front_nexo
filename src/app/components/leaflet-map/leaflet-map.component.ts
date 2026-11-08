@@ -31,6 +31,8 @@ export class LeafletMapComponent implements OnInit, OnChanges, OnDestroy {
   @Input() mapStyle: MapStyle = 'street';
   @Input() userCoordinates: MapPoint | null = null;
   @Input() userAccuracy: number | null = null;
+  @Input() pickLocationMode = false;
+  @Output() locationPicked = new EventEmitter<MapPoint>();
   @Output() poiClicked = new EventEmitter<Poi>();
   @Output() routeStatus = new EventEmitter<string>();
   @Output() routeInfo = new EventEmitter<RoutePresentation>();
@@ -59,6 +61,10 @@ export class LeafletMapComponent implements OnInit, OnChanges, OnDestroy {
         .setView([17.8409, -92.6189], 8);
       L.control.zoom({ position: 'bottomright' }).addTo(this.map);
       L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(this.map);
+      this.map.on('click', (event: L.LeafletMouseEvent) => {
+        if (!this.pickLocationMode) return;
+        this.ngZone.run(() => this.locationPicked.emit([event.latlng.lat, event.latlng.lng]));
+      });
       this.setBaseLayer();
       this.mapInitialized = true;
       this.addMarkers();
