@@ -57,13 +57,13 @@ export class MapRoutingService {
       shape_format: 'geojson',
       language: 'es-ES',
       directions_type: 'none',
-      units: 'kilometers'
+      units: 'km'
     };
 
     // No fuerza terracerías: sólo favorece trayectos más cortos evitando vías rápidas.
     // Valhalla sigue respetando restricciones de acceso mapeadas para automóviles.
     if (mode === 'secondary') {
-      body['costing_options'] = { auto: { shortest: true, use_highways: 0 } };
+      body['costing_options'] = { auto: { use_highways: 0, use_distance: 0.5 } };
     }
 
     const controller = new AbortController();
@@ -76,8 +76,7 @@ export class MapRoutingService {
         method: 'POST',
         signal: controller.signal,
         headers: {
-          'Content-Type': 'application/json',
-          'X-Client-Id': 'NEXO-Turismo-Tabasco'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(body)
       });
