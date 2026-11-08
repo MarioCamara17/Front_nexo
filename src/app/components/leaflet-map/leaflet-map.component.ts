@@ -128,12 +128,19 @@ export class LeafletMapComponent implements OnInit, OnChanges, OnDestroy {
       const coords = this.getPoiCoordinates(poi);
       if (!coords) continue;
 
-      const icon = L.icon({
-        iconUrl: 'assets/icon/poi_icon.svg',
-        iconRetinaUrl: 'assets/icon/poi_icon.svg',
+      const kind = (poi.category?.name || '').toLowerCase();
+      const cls = kind.includes('natur') ? 'nature'
+        : kind.includes('histor') ? 'history'
+        : kind.includes('avent') ? 'adventure'
+        : kind.includes('cultur') ? 'culture' : 'other';
+      const glyph: Record<string, string> = {
+        nature: '🌿', history: '🏛️', adventure: '⛰️', culture: '🎭', other: '📍'
+      };
+      const icon = L.divIcon({
+        className: 'nexo-poi-marker ' + cls,
+        html: '<span aria-hidden="true">' + glyph[cls] + '</span>',
         iconSize: [36, 36],
-        iconAnchor: [18, 36],
-        popupAnchor: [0, -30]
+        iconAnchor: [18, 18]
       });
       const marker = L.marker(coords, { icon }).addTo(this.map);
       // Crear nodos de texto impide insertar HTML no confiable del catálogo.
