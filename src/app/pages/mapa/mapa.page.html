@@ -1,89 +1,106 @@
 <ion-content class="map-content" [fullscreen]="true">
   <div class="page-wrapper">
     <div class="map-header">
-      <h1>🗺️ Rutas inteligentes</h1>
-      <p>
-        Selecciona lugares turísticos y NEXO trazará recorridos optimizados.
-      </p>
+      <div class="map-title-row">
+        <div>
+          <h1>🗺️ Explora Tabasco</h1>
+          <p>{{ visiblePoisCount }} lugares visibles · Rutas y caminos registrados</p>
+        </div>
+        <button class="route-mode-btn settings-btn" type="button"
+          (click)="showMapOptions = !showMapOptions"
+          [attr.aria-expanded]="showMapOptions"
+          aria-label="Mostrar u ocultar opciones de mapa">
+          {{ showMapOptions ? 'Ocultar' : 'Opciones' }}
+        </button>
+      </div>
 
       <div class="route-mode-actions">
-        <button
-          class="route-mode-btn"
-          [class.active]="isCreatingRoute"
-          (click)="toggleRouteCreation()"
-        >
-          {{ isCreatingRoute ? 'Cancelar ruta' : 'Crear ruta óptima' }}
+        <button class="route-mode-btn location-btn" type="button"
+          (click)="locateMe()" [disabled]="isLocating">
+          {{ isLocating ? 'Buscando…' : '📍 Mi ubicación' }}
         </button>
+        <button class="route-mode-btn" type="button"
+          (click)="leafletMap?.centrarTodos()">Ver lugares</button>
+        <button class="route-mode-btn" type="button"
+          [class.active]="isCreatingRoute" (click)="toggleRouteCreation()">
+          {{ isCreatingRoute ? 'Cancelar ruta' : '+ Crear ruta' }}
+        </button>
+        <button class="route-mode-btn center-route-btn" type="button"
+          *ngIf="routePoisToDisplay.length + (selectedOrigin ? 1 : 0) >= 2"
+          (click)="leafletMap?.centrarRuta()">🎯 Ver ruta</button>
+      </div>
 
-        <button
-          class="route-mode-btn optimize-btn"
-          *ngIf="isCreatingRoute && customRoute.length >= 2"
-          (click)="optimizarRuta()"
-        >
-          ⚡ Optimizar
-        </button>
+      <div class="map-options" *ngIf="showMapOptions">
+        <label class="control-label" for="map-search">Buscar lugares, municipios o categorías</label>
+        <input id="map-search" class="map-search" type="search"
+          placeholder="Ej. Balancán, museo, naturaleza…"
+          [(ngModel)]="searchText" (input)="applySearch()"/>
 
-        <button
-          class="route-mode-btn center-route-btn"
-          *ngIf="routePoisToDisplay.length >= 2"
-          (click)="leafletMap?.centrarRuta()"
-        >
-          🎯 Ver ruta
-        </button>
+        <div class="map-filters" aria-label="Filtrar lugares por categoría">
+          <button class="filter" type="button" *ngFor="let type of ['Todos','Cultura','Naturaleza','Historia','Aventura']"
+            [class.active]="currentFilter === type" (click)="aplicarFiltro(type)">{{type}}</button>
+        </div>
+
+        <div class="map-setting-row">
+          <div class="map-setting-section">
+            <span class="control-label">Vista del mapa</span>
+            <div class="map-pill-group">
+              <button type="button" [class.active]="mapStyle === 'street'" (click)="changeMapStyle('street')">Calles</button>
+              <button type="button" [class.active]="mapStyle === 'terrain'" (click)="changeMapStyle('terrain')">Relieve</button>
+            </div>
+          </div>
+          <div class="map-setting-section">
+            <span class="control-label">Tipo de recorrido</span>
+            <div class="map-pill-group">
+              <button type="button" [class.active]="travelMode === 'car'" (click)="changeTravelMode('car')">Auto</button>
+              <button type="button" [class.active]="travelMode === 'secondary'" (click)="changeTravelMode('secondary')">Caminos secundarios</button>
+              <button type="button" [class.active]="travelMode === 'bicycle'" (click)="changeTravelMode('bicycle')">Bicicleta</button>
+              <button type="button" [class.active]="travelMode === 'foot'" (click)="changeTravelMode('foot')">A pie</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="map-setting-row">
+          <button type="button" class="small-map-btn" (click)="enableLocationPicking()">
+            {{ pickLocationMode ? 'Cancelar selección' : '📌 Elegir ubicación en el mapa' }}
+          </button>
+          <button type="button" class="small-map-btn" *ngIf="myCoordinates"
+            (click)="leafletMap?.centrarUbicacion()">Centrar ubicación</button>
+          <button type="button" class="small-map-btn danger" *ngIf="myCoordinates"
+            (click)="clearMyLocation()">Eliminar ubicación</button>
+        </div>
+        <label class="location-origin-option" *ngIf="myCoordinates && routePoisToDisplay.length >= 1">
+          <input type="checkbox" [(ngModel)]="startFromMyLocation" />
+          Iniciar el recorrido desde mi ubicación o punto elegido
+        </label>
+        <p class="map-safety-note">El modo «Caminos secundarios» favorece trayectos menores y evita vías rápidas; no confirma terracería, acceso legal ni transitabilidad. Verifica el estado del camino antes de viajar.</p>
+      </div>
+
+      <div class="map-notices">
+        <p *ngIf="locationNotice" class="map-location-notice" role="status">{{locationNotice}}</p>
+        <p *ngIf="assistantNotice" class="map-route-notice" role="status">{{assistantNotice}}</p>
+        <p *ngIf="routePresentation.distanceKm !== null" class="map-route-summary" role="status">
+          <strong>{{ routePresentation.distanceKm | number:'1.1-2' }} km</strong>
+          <span *ngIf="routePresentation.durationMinutes !== null"> · {{routePresentation.durationMinutes}} min estimados</span>
+          <small> · Tiempo estimado según el perfil y datos cartográficos.</small>
+        </p>
       </div>
     </div>
 
-    <div class="map-filters">
-      <button
-        class="filter"
-        [class.active]="currentFilter === 'Todos'"
-        (click)="aplicarFiltro('Todos')"
-      >
-        Todos
-      </button>
-
-      <button
-        class="filter"
-        [class.active]="currentFilter === 'Cultura'"
-        (click)="aplicarFiltro('Cultura')"
-      >
-        Cultura
-      </button>
-
-      <button
-        class="filter"
-        [class.active]="currentFilter === 'Naturaleza'"
-        (click)="aplicarFiltro('Naturaleza')"
-      >
-        Naturaleza
-      </button>
-
-      <button
-        class="filter"
-        [class.active]="currentFilter === 'Historia'"
-        (click)="aplicarFiltro('Historia')"
-      >
-        Historia
-      </button>
-
-      <button
-        class="filter"
-        [class.active]="currentFilter === 'Aventura'"
-        (click)="aplicarFiltro('Aventura')"
-      >
-        Aventura
-      </button>
-    </div>
-
-    <p *ngIf="assistantNotice" role="status" style="padding: 12px; background: #fff4dc; color: #593f0b; border-radius: 10px;">{{assistantNotice}}</p>
     <div class="map-container">
       <app-leaflet-map
         [pois]="filteredPois"
         [routePois]="routePoisToDisplay"
-        [routeOrigin]="assistantOrigin"
+        [routeOrigin]="selectedOrigin"
+        [travelMode]="travelMode"
+        [mapStyle]="mapStyle"
+        [userCoordinates]="myCoordinates"
+        [userAccuracy]="myAccuracy"
+        [pickLocationMode]="pickLocationMode"
+        (locationPicked)="onLocationPicked($event)"
         (routeStatus)="assistantNotice = $event"
-        (poiClicked)="abrirPoiModal($event)"
-      >
+        (routeInfo)="onRouteInfo($event)"
+        (poiClicked)="abrirPoiModal($event)">
       </app-leaflet-map>
     </div>
 
@@ -105,13 +122,13 @@
           <p>
             {{ customRoute.length }} parada(s)
             <span *ngIf="totalDistanceKm > 0">
-              · {{ totalDistanceKm }} km aprox.
+              · {{ totalDistanceKm }} km en línea recta
             </span>
           </p>
         </div>
 
         <span class="optimized-badge" *ngIf="isRouteOptimized">
-          Optimizada
+          Orden aproximado
         </span>
       </div>
 
@@ -132,7 +149,14 @@
             <span>{{ poi.category.name }}</span>
           </div>
 
-          <button class="remove-btn" (click)="eliminarDeRuta(poi.id)">✕</button>
+          <div class="route-order-actions">
+            <button type="button" class="small-order-btn" (click)="moveStop(i, -1)"
+              [disabled]="i === 0" [attr.aria-label]="'Subir ' + poi.name">↑</button>
+            <button type="button" class="small-order-btn" (click)="moveStop(i, 1)"
+              [disabled]="i === customRoute.length - 1" [attr.aria-label]="'Bajar ' + poi.name">↓</button>
+            <button type="button" class="remove-btn" (click)="eliminarDeRuta(poi.id)"
+              [attr.aria-label]="'Quitar ' + poi.name">✕</button>
+          </div>
         </div>
       </div>
 
@@ -150,7 +174,7 @@
           (click)="optimizarRuta()"
           [disabled]="customRoute.length < 2"
         >
-          Optimizar
+          Ordenar paradas
         </button>
 
         <button
