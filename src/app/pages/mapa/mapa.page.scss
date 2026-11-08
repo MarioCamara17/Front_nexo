@@ -430,3 +430,150 @@ ion-content.map-content {
   font-weight: 800;
   cursor: pointer;
 }
+/* NEXO - rediseño de controles de exploración */
+.map-header {
+  top: 94px;
+  max-width: 720px;
+  max-height: min(67vh, 630px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid rgba(15, 118, 110, .14);
+  backdrop-filter: blur(8px);
+}
+
+.map-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.map-title-row > div { min-width: 0; }
+.map-title-row h1 { font-size: 1.04rem; color: #113e3a; }
+.map-title-row p { font-size: .74rem; line-height: 1.35; }
+.map-header .route-mode-actions { margin-top: 9px; }
+.route-mode-btn {
+  min-height: 36px;
+  transition: transform .15s, filter .15s;
+}
+.route-mode-btn:hover { filter: brightness(1.08); }
+.route-mode-btn:focus-visible,
+.map-pill-group button:focus-visible,
+.small-map-btn:focus-visible,
+.filter:focus-visible,
+.small-order-btn:focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
+}
+.route-mode-btn:disabled { opacity: .65; cursor: wait; }
+.route-mode-btn.settings-btn { background: #e5f5f0; color: #0c554c; }
+.route-mode-btn.location-btn { background: #0369a1; }
+.map-options { margin-top: 12px; padding-top: 12px; border-top: 1px solid #e2e8f0; }
+.control-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #234b49;
+  font-size: .78rem;
+  font-weight: 700;
+}
+.map-search {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: .9rem;
+}
+.map-search:focus { border-color: #0f766e; outline: 2px solid rgba(15,118,110,.2); }
+.map-header .map-filters {
+  position: static;
+  display: flex;
+  padding: 9px 1px;
+  gap: 6px;
+  overflow-x: auto;
+}
+.map-header .filter {
+  border: 1px solid #d2e0dc;
+  background: #f3f8f7;
+  color: #254d46;
+  box-shadow: none;
+}
+.map-header .filter.active {
+  border-color: #0f766e;
+  background: #0f766e;
+  color: white;
+}
+.map-setting-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 11px 0;
+}
+.map-setting-section { flex: 1 1 180px; min-width: 0; }
+.map-pill-group { display: flex; gap: 5px; flex-wrap: wrap; }
+.map-pill-group button, .small-map-btn {
+  cursor: pointer;
+  min-height: 34px;
+  border-radius: 10px;
+  padding: 7px 10px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #1f2937;
+  font-weight: 650;
+  font-size: .76rem;
+}
+.map-pill-group button.active {
+  border-color: #0f766e;
+  background: #e0f2ef;
+  color: #0f554e;
+}
+.small-map-btn.danger { color: #b91c1c; border-color: #fecaca; }
+.location-origin-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .8rem;
+  line-height: 1.4;
+  color: #284b47;
+}
+.location-origin-option input { width: 18px; height: 18px; accent-color: #0f766e; }
+.map-safety-note { font-size: .74rem; color: #576b6a; line-height: 1.5; }
+.map-notices p {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 9px;
+  line-height: 1.35;
+  font-size: .77rem;
+}
+.map-location-notice { background: #e8f5fb; color: #124964; }
+.map-route-notice { background: #fff5e2; color: #654413; }
+.map-route-summary { background: #e0f2ef; color: #155e56; }
+.map-route-summary strong { font-size: .98rem; }
+.map-route-summary small { font-size: .7rem; }
+.route-order-actions { display: flex; gap: 4px; align-items: center; }
+.small-order-btn {
+  width: 27px;
+  height: 27px;
+  border: 0;
+  border-radius: 8px;
+  background: #e0f2ef;
+  color: #0f766e;
+  cursor: pointer;
+  font-weight: 800;
+}
+.small-order-btn:disabled { opacity: .35; cursor: default; }
+.route-builder { max-width: 680px; max-height: 33vh; }
+.route-builder .route-builder-actions { flex-wrap: wrap; }
+.route-builder .route-builder-actions button { min-height: 36px; }
+@media (max-width: 600px) {
+  .map-header {
+    top: 89px;
+    max-height: 52vh;
+    padding: 11px;
+  }
+  .map-title-row h1 { font-size: .96rem; }
+  .route-mode-btn { padding: 7px 10px; font-size: .75rem; }
+  .route-builder { max-height: 30vh; }
+  .map-title-row { align-items: flex-start; }
+}
