@@ -43,6 +43,16 @@ export class LeafletMapComponent implements OnInit, OnChanges, OnDestroy {
   @Output() routeInfo = new EventEmitter<RoutePresentation>();
 
   map?: L.Map;
+
+  /**
+   * `leaflet.markercluster` es un plugin UMD que parchea la instancia global
+   * `window.L`. En builds optimizados el namespace ESM de Leaflet puede ser
+   * un objeto distinto, así que usamos la instancia global cuando exista.
+   */
+  private get leafletWithPlugins(): typeof L {
+    const globalLeaflet = typeof window !== 'undefined' ? (window as any).L : null;
+    return (globalLeaflet || L) as typeof L;
+  }
   mapInitialized = false;
 
   private markers: L.Marker[] = [];
@@ -77,7 +87,7 @@ export class LeafletMapComponent implements OnInit, OnChanges, OnDestroy {
       });
       // La capa base debe existir antes del cluster: MarkerCluster necesita maxZoom.
       this.setBaseLayer();
-      this.markerCluster = L.markerClusterGroup({
+      this.markerCluster = this.leafletWithPlugins.markerClusterGroup({
         maxClusterRadius: 46,
         showCoverageOnHover: false,
         spiderfyOnMaxZoom: true,
