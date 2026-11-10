@@ -14,6 +14,75 @@
   border: none;
 }
 
+/* Cursor de selección manual de ubicación */
+:host ::ng-deep .leaflet-container.picking-location {
+  cursor: crosshair;
+}
+
+/* Agrupación de marcadores cercanos */
+:host ::ng-deep .nexo-cluster {
+  background: transparent;
+  border: none;
+}
+
+:host ::ng-deep .nexo-cluster span {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 3px solid #ffffff;
+  background: linear-gradient(135deg, #0f766e, #0ea5e9);
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 800;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.35);
+}
+
+/* Etiqueta del radio de búsqueda */
+:host ::ng-deep .nexo-radius-label {
+  background: transparent;
+  border: none;
+}
+
+:host ::ng-deep .nexo-radius-label span {
+  display: block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.92);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.3);
+}
+
+:host ::ng-deep .nexo-distance {
+  color: #0f766e;
+  font-weight: 700;
+}
+
+/* Marcador de origen de ruta */
+:host ::ng-deep .route-start-marker {
+  background: transparent;
+  border: none;
+}
+
+:host ::ng-deep .route-start-marker div {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #16a34a;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
 :host ::ng-deep .route-order-marker div {
   width: 30px;
   height: 30px;

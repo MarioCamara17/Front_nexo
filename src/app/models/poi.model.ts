@@ -41,6 +41,8 @@ export interface Poi {
   municipality: Municipality;
   category: Category;
   route: Route;
+  /** Distancia al punto de referencia, calculada por el cliente o el backend. */
+  distance_km?: number;
 }
 
 export interface PoiResponse {

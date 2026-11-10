@@ -29,10 +29,14 @@ export class RutasPage implements OnInit {
   routes: Route[] = [];
   customRoutes: CustomRoute[] = [];
   pois: Poi[] = [];
+  routeSearch = '';
 
   isLoadingRoutes = false;
   isLoadingCustomRoutes = false;
   deletingRouteId: string | null = null;
+  routesError = '';
+  customRoutesError = '';
+  fallbackImage = 'assets/icon/logo-nexo.png';
 
   constructor(
     private routeService: RouteService,
@@ -58,6 +62,7 @@ export class RutasPage implements OnInit {
 
   loadRoutes() {
     this.isLoadingRoutes = true;
+    this.routesError = '';
 
     this.routeService.getAllRoutes().subscribe({
       next: (routes) => {
@@ -67,12 +72,14 @@ export class RutasPage implements OnInit {
       error: (error) => {
         console.error('Error cargando rutas generales:', error);
         this.isLoadingRoutes = false;
+        this.routesError = 'No se pudieron cargar las rutas recomendadas. Revisa tu conexión.';
       }
     });
   }
 
   loadCustomRoutes() {
     this.isLoadingCustomRoutes = true;
+    this.customRoutesError = '';
 
     this.routeService.getCustomRoutes().subscribe({
       next: (customRoutes) => {
@@ -82,6 +89,7 @@ export class RutasPage implements OnInit {
       error: (error) => {
         console.error('Error cargando rutas personalizadas:', error);
         this.isLoadingCustomRoutes = false;
+        this.customRoutesError = 'No se pudieron cargar tus rutas personalizadas. Revisa tu conexión.';
       }
     });
   }
@@ -99,6 +107,92 @@ export class RutasPage implements OnInit {
 
   getPoisForRoute(routeId: string): Poi[] {
     return this.pois.filter(poi => poi.route.id === routeId);
+  }
+
+  formatDuration(value: string): string {
+    if (!value) {
+      return '';
+    }
+
+    const match = value.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+
+    if (!match) {
+      return value;
+    }
+
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+
+    if (hours && minutes) {
+      return `${hours} h ${minutes} min`;
+    }
+
+    if (hours) {
+      return `${hours} h`;
+    }
+
+    return `${minutes} min`;
+  }
+
+  trackByRouteId(index: number, route: Route | CustomRoute): string {
+    return route.id;
+  }
+
+  get filteredRecommendedRoutes(): Route[] {
+    const term = this.routeSearch.toLocaleLowerCase('es').trim();
+    if (!term) {
+      return this.routes;
+    }
+    return this.routes.filter(route =>
+      [route.name, route.description, route.duration]
+        .some(value => (value || '').toLocaleLowerCase('es').includes(term))
+    );
+  }
+
+  get totalCustomStops(): number {
+    return this.customRoutes.reduce(
+      (total, route) => total + (route.route_places?.length || 0),
+      0
+    );
+  }
+
+  get totalRecommendedPlaces(): number {
+    return this.routes.reduce(
+      (total, route) => total + this.getPoisForRoute(route.id).length,
+      0
+    );
+  }
+
+  routeCategoryFor(routeId: string): string {
+    return this.getPoisForRoute(routeId)[0]?.category?.name || 'Ruta';
+  }
+
+  coverForRoute(routeId: string): string {
+    return this.getPoisForRoute(routeId).find(poi => !!poi.image)?.image
+      || this.fallbackImage;
+  }
+
+  coverForCustomRoute(route: CustomRoute): string {
+    return route.route_places.find(place => !!place.place_image)?.place_image
+      || this.fallbackImage;
+  }
+
+  clearRouteSearch(): void {
+    this.routeSearch = '';
+  }
+
+  goToMap(): void {
+    this.router.navigate(['/tabs/map']);
+  }
+
+  exploreRouteOnMap(route: Route, event: Event): void {
+    event.stopPropagation();
+    this.router.navigate(['/tabs/map'], {
+      queryParams: {
+        routeId: route.id,
+        routeName: route.name
+      }
+    });
   }
 
   async openModal(route: Route) {

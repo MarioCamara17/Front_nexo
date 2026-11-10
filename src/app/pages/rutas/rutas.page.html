@@ -1,127 +1,227 @@
 <ion-content class="nexo-page-content routes-content" [fullscreen]="true">
   <div class="routes-page">
-
-    <!-- ENCABEZADO -->
     <section class="routes-hero">
-      <span class="eyebrow">Experiencias turísticas</span>
-      <h1>Rutas de Tabasco 🧭</h1>
-      <p>
-        Explora rutas recomendadas y consulta los recorridos personalizados que has creado.
-      </p>
+      <div class="hero-copy">
+        <span class="eyebrow">Experiencias turísticas</span>
+        <h1>Rutas de Tabasco 🧭</h1>
+        <p>
+          Explora rutas recomendadas, consulta tus recorridos personalizados y ábrelos directamente en el mapa.
+        </p>
+      </div>
+
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <strong>{{ routes.length }}</strong>
+          <span>recomendadas</span>
+        </div>
+        <div class="hero-stat">
+          <strong>{{ customRoutes.length }}</strong>
+          <span>tuyas</span>
+        </div>
+        <div class="hero-stat">
+          <strong>{{ totalCustomStops }}</strong>
+          <span>paradas guardadas</span>
+        </div>
+      </div>
+
+      <button class="hero-cta" type="button" (click)="goToMap()">
+        🗺️ Abrir mapa y crear una ruta
+      </button>
     </section>
 
-    <!-- MIS RUTAS PERSONALIZADAS -->
     <section class="routes-section">
       <div class="section-header">
         <div>
           <h2>✨ Mis rutas personalizadas</h2>
           <p>Rutas creadas por ti desde el mapa.</p>
         </div>
-
         <span class="section-count">
           {{ customRoutes.length }} guardada(s)
         </span>
       </div>
 
-      <div class="custom-routes-list" *ngIf="customRoutes.length > 0; else noCustomRoutes">
-        <div
-          class="custom-route-card"
-          *ngFor="let route of customRoutes"
-          (click)="openCustomRouteModal(route)"
-        >
-          <div class="custom-route-top">
-            <div>
-              <span class="route-tag">Personalizada</span>
-              <h3>{{ route.name }}</h3>
-            </div>
-
-            <span class="route-points">+30 pts</span>
-          </div>
-
-          <p class="custom-description" *ngIf="route.description">
-            {{ route.description }}
-          </p>
-
-          <p class="custom-description" *ngIf="!route.description">
-            Ruta personalizada creada desde el mapa de NEXO.
-          </p>
-
-          <div class="route-places">
-            <strong>Lugares:</strong>
-            <span>{{ getCustomRoutePlacesText(route) }}</span>
-          </div>
-
-          <div class="custom-route-footer">
-            <span>{{ route.route_places.length }} parada(s)</span>
-            <span>{{ route.created_at | date:'dd/MM/yyyy' }}</span>
-          </div>
-
-          <div class="custom-route-actions">
-            <button
-              class="view-map-route-btn"
-              type="button"
-              (click)="verRutaEnMapa(route, $event)"
-            >
-              Ver en mapa
-            </button>
-
-            <button
-              class="delete-custom-route-btn"
-              type="button"
-              [disabled]="deletingRouteId === route.id"
-              (click)="confirmDeleteCustomRoute(route, $event)"
-            >
-              {{ deletingRouteId === route.id ? 'Eliminando...' : 'Eliminar ruta' }}
-            </button>
-          </div>
-        </div>
+      <div class="loading-list" *ngIf="isLoadingCustomRoutes">
+        <div class="skeleton-card" *ngFor="let skeleton of [1, 2]"></div>
       </div>
 
-      <ng-template #noCustomRoutes>
-        <div class="empty-custom-routes">
-          <div class="empty-icon">🧭</div>
-          <h3>Aún no tienes rutas personalizadas</h3>
-          <p>
-            Ve al mapa, toca “Crear ruta óptima” y selecciona los lugares que quieras visitar.
-          </p>
-        </div>
-      </ng-template>
+      <div class="section-error" *ngIf="!isLoadingCustomRoutes && customRoutesError">
+        <span aria-hidden="true">⚠️</span>
+        <p>{{ customRoutesError }}</p>
+        <button type="button" (click)="loadCustomRoutes()">Reintentar</button>
+      </div>
+
+      <div class="custom-routes-list"
+        *ngIf="!isLoadingCustomRoutes && !customRoutesError && customRoutes.length > 0">
+        <article
+          class="custom-route-card"
+          *ngFor="let route of customRoutes; trackBy: trackByRouteId"
+          (click)="openCustomRouteModal(route)"
+        >
+          <div class="route-cover">
+            <img
+              loading="lazy"
+              [src]="coverForCustomRoute(route)"
+              [alt]="route.name"
+            />
+            <div class="cover-gradient">
+              <span class="route-tag">Personalizada</span>
+              <span class="route-points">+30 pts</span>
+            </div>
+          </div>
+
+          <div class="route-card-body">
+            <h3>{{ route.name }}</h3>
+
+            <p class="custom-description" *ngIf="route.description">
+              {{ route.description }}
+            </p>
+
+            <p class="custom-description" *ngIf="!route.description">
+              Ruta personalizada creada desde el mapa de NEXO.
+            </p>
+
+            <div class="route-places">
+              <strong>Lugares</strong>
+              <span>{{ getCustomRoutePlacesText(route) }}</span>
+            </div>
+
+            <div class="custom-route-footer">
+              <span>📍 {{ route.route_places.length }} parada(s)</span>
+              <span>📅 {{ route.created_at | date:'dd/MM/yyyy' }}</span>
+            </div>
+
+            <div class="custom-route-actions">
+              <button
+                class="view-map-route-btn"
+                type="button"
+                (click)="verRutaEnMapa(route, $event)"
+              >
+                Ver en mapa
+              </button>
+
+              <button
+                class="delete-custom-route-btn"
+                type="button"
+                [disabled]="deletingRouteId === route.id"
+                (click)="confirmDeleteCustomRoute(route, $event)"
+              >
+                {{ deletingRouteId === route.id ? 'Eliminando...' : 'Eliminar ruta' }}
+              </button>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="empty-custom-routes"
+        *ngIf="!isLoadingCustomRoutes && !customRoutesError && customRoutes.length === 0">
+        <div class="empty-icon">🧭</div>
+        <h3>Aún no tienes rutas personalizadas</h3>
+        <p>
+          Abre el mapa, toca «Crear ruta» y selecciona los lugares que quieras visitar.
+          Después podrás guardarlos y verlos aquí.
+        </p>
+        <button class="empty-cta" type="button" (click)="goToMap()">
+          Crear mi primera ruta
+        </button>
+      </div>
     </section>
 
-    <!-- RUTAS RECOMENDADAS -->
     <section class="routes-section">
       <div class="section-header">
         <div>
           <h2>🗺️ Rutas recomendadas</h2>
           <p>Recorridos sugeridos para explorar el estado.</p>
         </div>
-
         <span class="section-count">
-          {{ routes.length }} disponible(s)
+          {{ filteredRecommendedRoutes.length }} disponible(s)
         </span>
       </div>
 
-      <div class="recommended-routes-list">
-        <div
+      <div class="route-search-row">
+        <input
+          type="search"
+          placeholder="Buscar una ruta por nombre o descripción…"
+          aria-label="Buscar rutas recomendadas"
+          class="route-search"
+          [(ngModel)]="routeSearch"
+        />
+        <button
+          type="button"
+          class="clear-route-search"
+          *ngIf="routeSearch"
+          (click)="clearRouteSearch()"
+        >
+          Limpiar
+        </button>
+      </div>
+
+      <div class="loading-list" *ngIf="isLoadingRoutes">
+        <div class="skeleton-card" *ngFor="let skeleton of [1, 2, 3, 4]"></div>
+      </div>
+
+      <div class="section-error" *ngIf="!isLoadingRoutes && routesError">
+        <span aria-hidden="true">⚠️</span>
+        <p>{{ routesError }}</p>
+        <button type="button" (click)="loadRoutes()">Reintentar</button>
+      </div>
+
+      <div class="recommended-routes-list"
+        *ngIf="!isLoadingRoutes && !routesError && filteredRecommendedRoutes.length > 0">
+        <article
           class="recommended-route-card"
-          *ngFor="let route of routes"
+          *ngFor="let route of filteredRecommendedRoutes; trackBy: trackByRouteId"
           (click)="openModal(route)"
         >
-          <span class="route-tag recommended">Recomendada</span>
-
-          <h3>{{ route.name }}</h3>
-
-          <p>
-            {{ route.description }}
-          </p>
-
-          <div class="recommended-route-footer">
-            <span>📍 {{ getPoisForRoute(route.id).length }} lugar(es)</span>
-            <span>⏱️ {{ route.duration }}</span>
+          <div class="route-cover">
+            <img
+              loading="lazy"
+              [src]="coverForRoute(route.id)"
+              [alt]="route.name"
+            />
+            <div class="cover-gradient">
+              <span class="route-tag recommended">{{ routeCategoryFor(route.id) }}</span>
+              <span class="cover-duration">{{ formatDuration(route.duration) }}</span>
+            </div>
           </div>
-        </div>
+
+          <div class="route-card-body">
+            <h3>{{ route.name }}</h3>
+            <p>{{ route.description }}</p>
+
+            <div class="recommended-route-footer">
+              <span>📍 {{ getPoisForRoute(route.id).length }} lugar(es)</span>
+              <span>🧭 Ruta sugerida</span>
+            </div>
+
+            <div class="recommended-route-actions">
+              <button
+                type="button"
+                class="explore-route-btn"
+                (click)="exploreRouteOnMap(route, $event)"
+              >
+                Explorar en mapa
+              </button>
+              <button
+                type="button"
+                class="detail-route-btn"
+                (click)="$event.stopPropagation(); openModal(route)"
+              >
+                Ver detalle
+              </button>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="empty-custom-routes"
+        *ngIf="!isLoadingRoutes && !routesError && filteredRecommendedRoutes.length === 0">
+        <div class="empty-icon">🔎</div>
+        <h3>No encontramos rutas con esa búsqueda</h3>
+        <p>Prueba con otro nombre o limpia el filtro para ver todas las rutas.</p>
+        <button class="empty-cta" type="button" (click)="clearRouteSearch()">
+          Ver todas las rutas
+        </button>
       </div>
     </section>
-
   </div>
 </ion-content>

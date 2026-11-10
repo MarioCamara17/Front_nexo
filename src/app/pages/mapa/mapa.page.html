@@ -4,13 +4,16 @@
       <div class="map-title-row">
         <div>
           <h1>🗺️ Explora Tabasco</h1>
-          <p>{{ visiblePoisCount }} lugares visibles · Rutas y caminos registrados</p>
+          <p>
+            {{ visiblePoisCount }} lugares visibles · Radio {{ searchRadiusKm }} km
+            <span *ngIf="onlyInsideRadius"> · filtrado por distancia</span>
+          </p>
         </div>
         <button class="route-mode-btn settings-btn" type="button"
           (click)="showMapOptions = !showMapOptions"
           [attr.aria-expanded]="showMapOptions"
           aria-label="Mostrar u ocultar opciones de mapa">
-          {{ showMapOptions ? 'Ocultar' : 'Opciones' }}
+          ⚙️ {{ showMapOptions ? 'Ocultar' : 'Opciones' }}
         </button>
       </div>
 
@@ -18,6 +21,11 @@
         <button class="route-mode-btn location-btn" type="button"
           (click)="locateMe()" [disabled]="isLocating">
           {{ isLocating ? 'Buscando…' : '📍 Mi ubicación' }}
+        </button>
+        <button class="route-mode-btn nearby-btn" type="button"
+          (click)="detectarLugaresCercanos()"
+          [disabled]="nearbyLoading || !myCoordinates">
+          {{ nearbyLoading ? 'Detectando…' : '🎯 Detectar' }}
         </button>
         <button class="route-mode-btn" type="button"
           (click)="leafletMap?.centrarTodos()">Ver lugares</button>
@@ -30,15 +38,81 @@
           (click)="leafletMap?.centrarRuta()">🎯 Ver ruta</button>
       </div>
 
+      <div class="route-filter-banner" *ngIf="routeFilterId">
+        <span>🧭 {{ routeFilterName }}</span>
+        <button type="button" (click)="clearRouteFilter()">Quitar filtro</button>
+      </div>
+
       <div class="map-options" *ngIf="showMapOptions">
         <label class="control-label" for="map-search">Buscar lugares, municipios o categorías</label>
-        <input id="map-search" class="map-search" type="search"
-          placeholder="Ej. Balancán, museo, naturaleza…"
-          [(ngModel)]="searchText" (input)="applySearch()"/>
+        <div class="search-row">
+          <input id="map-search" class="map-search" type="search"
+            placeholder="Ej. Balancán, museo, naturaleza…"
+            [(ngModel)]="searchText" (input)="applySearch()"/>
+          <button type="button" class="small-map-btn clear-search"
+            *ngIf="searchText" (click)="searchText = ''; applySearch()">Limpiar</button>
+        </div>
 
         <div class="map-filters" aria-label="Filtrar lugares por categoría">
           <button class="filter" type="button" *ngFor="let type of ['Todos','Cultura','Naturaleza','Historia','Aventura']"
             [class.active]="currentFilter === type" (click)="aplicarFiltro(type)">{{type}}</button>
+        </div>
+
+        <div class="radius-panel" aria-label="Radio de búsqueda">
+          <div class="radius-panel-head">
+            <div>
+              <span class="control-label">Radio de búsqueda</span>
+              <p class="radius-help">Distancia en línea recta desde tu ubicación o punto elegido.</p>
+            </div>
+            <strong class="radius-value">{{ searchRadiusKm }} km</strong>
+          </div>
+
+          <input
+            class="radius-range"
+            type="range"
+            min="1"
+            max="100"
+            step="1"
+            [(ngModel)]="searchRadiusKm"
+            (ngModelChange)="onRadiusChange()"
+            aria-label="Radio de búsqueda en kilómetros"
+          />
+
+          <div class="radius-presets">
+            <button
+              type="button"
+              *ngFor="let preset of radiusPresets"
+              [class.active]="searchRadiusKm === preset"
+              (click)="setRadius(preset)"
+            >
+              {{ preset }} km
+            </button>
+          </div>
+
+          <div class="radius-actions">
+            <button
+              class="small-map-btn radius-detect"
+              type="button"
+              (click)="detectarLugaresCercanos()"
+              [disabled]="nearbyLoading || !myCoordinates"
+            >
+              {{ nearbyLoading ? 'Buscando…' : '🎯 Detectar lugares en el radio' }}
+            </button>
+
+            <label class="radius-toggle">
+              <input
+                type="checkbox"
+                [(ngModel)]="onlyInsideRadius"
+                (ngModelChange)="onOnlyInsideChange()"
+                [disabled]="!myCoordinates"
+              />
+              Solo dentro del radio
+            </label>
+          </div>
+
+          <p class="radius-hint" *ngIf="!myCoordinates">
+            Pulsa «Mi ubicación» o elige un punto en el mapa para activar el círculo.
+          </p>
         </div>
 
         <div class="map-setting-row">
@@ -47,6 +121,7 @@
             <div class="map-pill-group">
               <button type="button" [class.active]="mapStyle === 'street'" (click)="changeMapStyle('street')">Calles</button>
               <button type="button" [class.active]="mapStyle === 'terrain'" (click)="changeMapStyle('terrain')">Relieve</button>
+              <button type="button" [class.active]="mapStyle === 'satellite'" (click)="changeMapStyle('satellite')">Satélite</button>
             </div>
           </div>
           <div class="map-setting-section">
@@ -78,12 +153,31 @@
 
       <div class="map-notices">
         <p *ngIf="locationNotice" class="map-location-notice" role="status">{{locationNotice}}</p>
-        <p *ngIf="assistantNotice" class="map-route-notice" role="status">{{assistantNotice}}</p>
-        <p *ngIf="routePresentation.distanceKm !== null" class="map-route-summary" role="status">
-          <strong>{{ routePresentation.distanceKm | number:'1.1-2' }} km</strong>
-          <span *ngIf="routePresentation.durationMinutes !== null"> · {{routePresentation.durationMinutes}} min estimados</span>
-          <small> · Tiempo estimado según el perfil y datos cartográficos.</small>
-        </p>
+        <p *ngIf="nearbyNotice" class="map-nearby-notice" role="status">{{nearbyNotice}}</p>
+
+        <div class="route-summary-card" *ngIf="hasActiveRoute" role="status">
+          <div class="route-summary-head">
+            <span class="route-summary-icon" aria-hidden="true">🧭</span>
+            <div class="route-summary-main">
+              <strong *ngIf="routePresentation.loading">Calculando recorrido…</strong>
+              <strong *ngIf="!routePresentation.loading && routePresentation.distanceKm !== null">
+                {{ routePresentation.distanceKm | number:'1.1-2' }} km
+                <span *ngIf="routePresentation.durationMinutes !== null">
+                  · {{ routePresentation.durationMinutes }} min
+                </span>
+              </strong>
+              <strong *ngIf="!routePresentation.loading && routePresentation.distanceKm === null && routePresentation.isEstimated">
+                Ruta no verificada
+              </strong>
+              <small>{{ travelModeLabel }}</small>
+            </div>
+            <span class="route-spinner" aria-hidden="true" *ngIf="routePresentation.loading"></span>
+          </div>
+          <p class="route-summary-note" *ngIf="routePresentation.note">{{ routePresentation.note }}</p>
+        </div>
+
+        <p *ngIf="!!assistantNotice && !hasActiveRoute" class="map-route-notice" role="status">{{assistantNotice}}</p>
+        <p *ngIf="!!routeStatusMessage" class="map-route-notice" role="status">{{routeStatusMessage}}</p>
       </div>
     </div>
 
@@ -97,12 +191,64 @@
         [userCoordinates]="myCoordinates"
         [userAccuracy]="myAccuracy"
         [pickLocationMode]="pickLocationMode"
+        [searchCenter]="searchCenter"
+        [searchRadiusKm]="searchRadiusKm"
+        [showSearchRadius]="showSearchRadius"
         (locationPicked)="onLocationPicked($event)"
-        (routeStatus)="assistantNotice = $event"
+        (routeStatus)="routeStatusMessage = $event"
         (routeInfo)="onRouteInfo($event)"
         (poiClicked)="abrirPoiModal($event)">
       </app-leaflet-map>
+
+      <div class="map-state-overlay" *ngIf="poisLoading">
+        <span class="map-state-spinner" aria-hidden="true"></span>
+        <p>Cargando lugares de Tabasco…</p>
+      </div>
+
+      <div class="map-state-overlay error" *ngIf="!poisLoading && !!poisError">
+        <span class="map-state-icon" aria-hidden="true">⚠️</span>
+        <p>{{ poisError }}</p>
+        <button type="button" (click)="cargarPois()">Reintentar</button>
+      </div>
+
+      <div class="map-state-overlay empty" *ngIf="!poisLoading && !poisError && pois.length > 0 && filteredPois.length === 0">
+        <span class="map-state-icon" aria-hidden="true">🔎</span>
+        <p>No hay lugares que coincidan con los filtros actuales.</p>
+        <button type="button" (click)="resetFilters()">Restablecer filtros</button>
+      </div>
+
+      <div class="pick-location-banner" *ngIf="pickLocationMode">
+        <span>📌 Toca el mapa para elegir tu ubicación de referencia</span>
+        <button type="button" (click)="enableLocationPicking()">Cancelar</button>
+      </div>
     </div>
+
+    <div class="radius-badge" *ngIf="!isCreatingRoute && !selectedPoi" role="status">
+      <span class="radius-ring" aria-hidden="true"></span>
+      <div>
+        <strong>Radio {{ searchRadiusKm }} km</strong>
+        <small>{{ myCoordinates ? 'desde tu punto de referencia' : 'activa tu ubicación' }}</small>
+      </div>
+      <button
+        type="button"
+        *ngIf="myCoordinates"
+        (click)="leafletMap?.centrarRadio()"
+        aria-label="Centrar el radio en el mapa"
+      >
+        ⤢
+      </button>
+    </div>
+
+    <button
+      class="assistant-fab"
+      type="button"
+      *ngIf="!isCreatingRoute && !selectedPoi"
+      (click)="openAssistant()"
+      aria-label="Abrir el asistente NEXO"
+    >
+      <span aria-hidden="true">🤖</span>
+      <span>Asistente</span>
+    </button>
 
     <div class="selected-route-floating" *ngIf="selectedSavedRoute && !isCreatingRoute">
       <div>
@@ -124,6 +270,10 @@
             <span *ngIf="totalDistanceKm > 0">
               · {{ totalDistanceKm }} km en línea recta
             </span>
+            <span *ngIf="routePresentation.loading"> · calculando recorrido…</span>
+            <span *ngIf="!routePresentation.loading && routePresentation.distanceKm !== null">
+              · {{ routePresentation.distanceKm | number:'1.1-2' }} km por carretera
+            </span>
           </p>
         </div>
 
@@ -131,6 +281,11 @@
           Orden aproximado
         </span>
       </div>
+
+      <label class="route-origin-toggle" *ngIf="myCoordinates && customRoute.length > 0">
+        <input type="checkbox" [(ngModel)]="startFromMyLocation" />
+        Iniciar el recorrido desde mi ubicación o punto elegido
+      </label>
 
       <p class="route-builder-help" *ngIf="customRoute.length === 0">
         Toca marcadores del mapa para agregar lugares a tu recorrido.
@@ -197,11 +352,19 @@
         <div class="meta">
           <span>⭐ 50 pts</span>
           <span>📍 {{ selectedPoi.category.name || 'Turismo' }}</span>
+          <span *ngIf="selectedPoi.municipality?.name">🏙️ {{ selectedPoi.municipality.name }}</span>
+          <span *ngIf="selectedPoi.distance_km !== undefined">
+            🧭 a {{ selectedPoi.distance_km | number:'1.1-2' }} km
+          </span>
         </div>
 
         <div class="preview-actions">
           <button class="preview-btn secondary" (click)="cerrarPreview()">
             Cerrar
+          </button>
+
+          <button class="preview-btn secondary" (click)="crearRutaConPoi(selectedPoi)">
+            + Añadir a ruta
           </button>
 
           <button class="preview-btn primary" (click)="abrirDetalleCompleto(selectedPoi, $event)">

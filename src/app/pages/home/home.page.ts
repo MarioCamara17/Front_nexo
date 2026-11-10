@@ -9,6 +9,7 @@ import {
   IonFabButton
 } from '@ionic/angular/standalone';
 import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 import { PoiCardComponent } from '../../components/poi-card/poi-card.component';
@@ -20,7 +21,9 @@ import {
   GamificationProfile
 } from 'src/app/services/gamification/gamification.service';
 import { Poi } from 'src/app/models/poi.model';
+import { Route } from 'src/app/models/route.model';
 import { PoiModalComponent } from 'src/app/components/poi-modal/poi-modal.component';
+import { RouteService } from 'src/app/services/route/route.service';
 
 @Component({
   selector: 'app-home',
@@ -41,6 +44,7 @@ import { PoiModalComponent } from 'src/app/components/poi-modal/poi-modal.compon
 })
 export class HomePage implements OnInit, OnDestroy {
   poiList: Poi[] = [];
+  routes: Route[] = [];
   isLoading = false;
 
   gamificationProfile$ = this.gamificationService.profile$;
@@ -52,11 +56,14 @@ export class HomePage implements OnInit, OnDestroy {
     private poiService: PoiService,
     private favoritesService: FavoritesService,
     private authService: AuthService,
-    private gamificationService: GamificationService
+    private gamificationService: GamificationService,
+    private routeService: RouteService,
+    private router: Router
   ) {}
 
   ngOnInit() {
     this.loadPois();
+    this.loadRoutes();
     this.loadGamification();
 
     this.subscriptions.push(
@@ -82,6 +89,7 @@ export class HomePage implements OnInit, OnDestroy {
     if (this.authService.isLoggedIn()) {
       this.favoritesService.refresh();
       this.loadPois();
+      this.loadRoutes();
       this.loadGamification();
     }
   }
@@ -109,6 +117,59 @@ export class HomePage implements OnInit, OnDestroy {
     this.gamificationService.loadProfile().subscribe({
       error: (error: unknown) => {
         console.error('Error al cargar gamificación:', error);
+      }
+    });
+  }
+
+  loadRoutes() {
+    this.routeService.getAllRoutes().subscribe({
+      next: (routes: Route[]) => {
+        this.routes = routes;
+      },
+      error: (error: unknown) => {
+        console.error('Error al cargar rutas para inicio:', error);
+      }
+    });
+  }
+
+  getRoutePoiCount(routeId: string): number {
+    return this.poiList.filter(poi => poi.route?.id === routeId).length;
+  }
+
+  formatDuration(value: string): string {
+    if (!value) {
+      return '';
+    }
+
+    const match = value.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+
+    if (!match) {
+      return value;
+    }
+
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+
+    if (hours && minutes) {
+      return `${hours} h ${minutes} min`;
+    }
+
+    if (hours) {
+      return `${hours} h`;
+    }
+
+    return `${minutes} min`;
+  }
+
+  trackByRouteId(index: number, route: Route): string {
+    return route.id;
+  }
+
+  openRouteInMap(route: Route): void {
+    this.router.navigate(['/tabs/map'], {
+      queryParams: {
+        routeId: route.id,
+        routeName: route.name
       }
     });
   }

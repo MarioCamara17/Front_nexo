@@ -1,129 +1,347 @@
-<ion-header>
-  <ion-toolbar>
-    <ion-title>Asistente NEXO</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content [fullscreen]="true" class="chat-content">
+  <div class="chat-shell">
+    <header class="agent-card">
+      <div class="agent-avatar">
+        <span aria-hidden="true">🌿</span>
+        <i class="online-dot" [class.offline]="!isOnline" aria-hidden="true"></i>
+      </div>
 
-<ion-content>
-  <main class="assistant">
-    <section class="intro">
-      <span>GUÍA INTERACTIVA</span>
-      <h1>Prepara tu próxima visita</h1>
-      <p>
-        Consulta los lugares registrados y explóralos en el mapa.
-      </p>
-    </section>
+      <div class="agent-info">
+        <div class="agent-name">
+          <strong>NEXO</strong>
+          <span class="ai-badge">IA</span>
+        </div>
+        <p>
+          {{
+            !isOnline
+              ? 'Sin conexión · revisa tu red'
+              : typing
+                ? 'Escribiendo…'
+                : 'En línea · Guía turístico de Tabasco'
+          }}
+        </p>
+      </div>
 
-    <section class="settings" aria-label="Opciones de consulta">
-      <ion-item>
-        <ion-select
-          label="Lugar de interés"
-          labelPlacement="stacked"
-          placeholder="Selecciona un lugar"
-          interface="popover"
-          [(ngModel)]="placeId"
-          [disabled]="placesLoading || loading"
-        >
-          <ion-select-option
-            *ngFor="let poi of pois"
-            [value]="poi.id"
-          >
-            {{ poi.name }}
-          </ion-select-option>
-        </ion-select>
-      </ion-item>
-
-      <p *ngIf="placesLoading" role="status">
-        Cargando lugares…
-      </p>
-
-      <p *ngIf="placesError" role="alert">
-        {{ placesError }}
-        <button type="button" (click)="loadPlaces()">
-          Reintentar
-        </button>
-      </p>
-
-      <ion-item>
-        <ion-select
-          label="Radio de búsqueda"
-          labelPlacement="stacked"
-          [(ngModel)]="radius"
-          [disabled]="loading"
-        >
-          <ion-select-option [value]="1">1 km</ion-select-option>
-          <ion-select-option [value]="5">5 km</ion-select-option>
-          <ion-select-option [value]="10">10 km</ion-select-option>
-          <ion-select-option [value]="25">25 km</ion-select-option>
-          <ion-select-option [value]="100">100 km</ion-select-option>
-        </ion-select>
-      </ion-item>
-    </section>
-
-    <section
-      class="question-groups"
-      aria-label="Preguntas disponibles"
-    >
-      <div *ngFor="let group of groups">
-        <h2>{{ group.title }}</h2>
-
+      <div class="agent-actions">
         <button
           type="button"
-          class="question"
-          *ngFor="let question of group.questions"
-          [disabled]="loading"
-          (click)="ask(question.id, question.label)"
+          class="icon-action"
+          [class.active]="autoSpeak"
+          [attr.aria-pressed]="autoSpeak"
+          (click)="toggleAutoSpeak()"
+          title="Leer las respuestas en voz alta"
         >
-          {{ question.label }}
-          <span aria-hidden="true">↗</span>
+          🔊
+        </button>
+        <button
+          type="button"
+          class="icon-action"
+          (click)="newConversation()"
+          title="Empezar una conversación nueva"
+          aria-label="Empezar una conversación nueva"
+        >
+          ↺
+        </button>
+      </div>
+    </header>
+
+    <div class="context-bar" aria-label="Contexto de la conversación">
+      <button
+        type="button"
+        class="context-chip"
+        [class.open]="showRadiusPanel"
+        (click)="toggleRadiusPanel()"
+      >
+        🎯 Radio {{ radius }} km
+      </button>
+
+      <button
+        type="button"
+        class="context-chip"
+        [class.active]="!!location"
+        [disabled]="locationBusy"
+        (click)="shareLocation()"
+      >
+        📍 {{ locationBusy ? 'Ubicando…' : locationLabel }}
+      </button>
+
+      <span class="context-chip place" *ngIf="contextPlaceName">
+        📌 {{ contextPlaceName }}
+        <button
+          type="button"
+          class="chip-close"
+          (click)="clearPlaceContext()"
+          aria-label="Quitar lugar del contexto"
+        >
+          ✕
+        </button>
+      </span>
+    </div>
+
+    <section
+      class="radius-panel"
+      *ngIf="showRadiusPanel"
+      aria-label="Radio de búsqueda"
+    >
+      <div class="radius-head">
+        <div>
+          <strong>Radio de búsqueda</strong>
+          <p>Distancia en línea recta desde tu ubicación.</p>
+        </div>
+        <span class="radius-value">{{ radius }} km</span>
+      </div>
+
+      <input
+        class="radius-range"
+        type="range"
+        min="1"
+        max="100"
+        step="1"
+        [(ngModel)]="radius"
+        (ngModelChange)="onRadiusChange()"
+        aria-label="Radio de búsqueda en kilómetros"
+      />
+
+      <div class="radius-presets">
+        <button
+          type="button"
+          *ngFor="let preset of radiusPresets"
+          [class.active]="radius === preset"
+          (click)="setRadius(preset)"
+        >
+          {{ preset }} km
+        </button>
+      </div>
+
+      <div class="radius-actions">
+        <button
+          type="button"
+          class="radius-search"
+          [disabled]="sending"
+          (click)="searchWithRadius()"
+        >
+          Buscar con este radio
+        </button>
+        <button
+          type="button"
+          class="radius-close"
+          (click)="toggleRadiusPanel()"
+        >
+          Cerrar
         </button>
       </div>
     </section>
 
+    <div class="quick-prompts" aria-label="Atajos de consulta">
+      <button
+        type="button"
+        *ngFor="let prompt of quickPrompts; trackBy: trackSuggestion"
+        [disabled]="sending"
+        (click)="send(prompt.message)"
+      >
+        {{ prompt.label }}
+      </button>
+    </div>
+
+    <p class="notice" *ngIf="notice" role="status">{{ notice }}</p>
+
     <section
-      class="messages"
-      aria-label="Conversación"
+      class="thread"
       aria-live="polite"
-      [attr.aria-busy]="loading"
+      [attr.aria-busy]="typing"
     >
+      <div class="empty-state" *ngIf="!hasMessages && !typing">
+        <span class="empty-emoji" aria-hidden="true">🌿</span>
+        <h2>Tu guía de Tabasco</h2>
+        <p>Pregunta con tus propias palabras o usa un atajo.</p>
+      </div>
+
       <article
-        *ngFor="let message of messages"
+        class="message-row"
+        *ngFor="let message of messages; let last = last; trackBy: trackMessage"
         [class.user]="message.role === 'user'"
       >
-        <small>
-          {{ message.role === 'bot' ? 'NEXO' : 'Tú' }}
-        </small>
+        <div class="avatar assistant" *ngIf="message.role === 'assistant'">
+          🌿
+        </div>
 
-        <p style="white-space: pre-wrap;">{{ message.reply }}</p>
-
-        <button
-          type="button"
-          class="result"
-          *ngFor="let place of message.places"
-          (click)="showPlace(place.id)"
+        <div
+          class="bubble"
+          [class.user]="message.role === 'user'"
+          [class.error]="message.error"
         >
-          {{ place.name }}
+          <div class="bubble-head">
+            <strong>{{ message.role === 'user' ? 'Tú' : 'NEXO' }}</strong>
+            <time>{{ formatTime(message.createdAt) }}</time>
 
-          <span *ngIf="place.distance_km !== undefined">
-            · {{ place.distance_km }} km
-          </span>
+            <button
+              type="button"
+              class="speak-btn"
+              *ngIf="message.role === 'assistant' && speechSupported"
+              (click)="speak(message)"
+              [attr.aria-label]="
+                speakingId === message.id
+                  ? 'Detener la lectura'
+                  : 'Leer la respuesta en voz alta'
+              "
+            >
+              {{ speakingId === message.id ? '⏹' : '🔊' }}
+            </button>
+          </div>
 
-          · Ver en mapa
-        </button>
+          <p class="bubble-text">{{ message.content }}</p>
 
-        <button
-          type="button"
-          class="action"
-          *ngFor="let item of message.actions"
-          (click)="action(item)"
-        >
-          {{ item.label }}
-        </button>
+          <div class="place-carousel" *ngIf="message.places?.length">
+            <article
+              class="place-card"
+              *ngFor="let place of message.places; trackBy: trackPlace"
+            >
+              <div class="place-cover">
+                <img
+                  *ngIf="place.image"
+                  [src]="place.image"
+                  [alt]="place.name"
+                  loading="lazy"
+                  (error)="imageError(place)"
+                />
+                <span class="cover-fallback" *ngIf="!place.image" aria-hidden="true">
+                  📍
+                </span>
+                <span
+                  class="distance-pill"
+                  *ngIf="place.distance_km !== undefined"
+                >
+                  {{ place.distance_km | number: '1.0-1' }} km
+                </span>
+              </div>
+
+              <div class="place-body">
+                <strong class="place-name">{{ place.name }}</strong>
+                <p class="place-meta">
+                  {{ place.category || 'Turismo' }}
+                  <span *ngIf="place.municipality"> · {{ place.municipality }}</span>
+                </p>
+                <p class="place-desc" *ngIf="place.description">
+                  {{ place.description }}
+                </p>
+
+                <div
+                  class="place-tags"
+                  *ngIf="place.schedule || place.cost || place.route_name"
+                >
+                  <span *ngIf="place.schedule">🕒 {{ place.schedule }}</span>
+                  <span *ngIf="place.cost">🎟️ {{ place.cost }}</span>
+                  <span *ngIf="place.route_name">🧭 {{ place.route_name }}</span>
+                </div>
+
+                <div class="place-actions">
+                  <button type="button" (click)="showPlace(place)">
+                    🗺️ Mapa
+                  </button>
+                  <button type="button" (click)="directionsTo(place)">
+                    ➤ Cómo llegar
+                  </button>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div class="action-row" *ngIf="message.actions?.length">
+            <button
+              type="button"
+              class="action-btn"
+              *ngFor="let item of message.actions"
+              [class.primary]="
+                item.type === 'places' ||
+                item.type === 'itinerary' ||
+                item.type === 'directions' ||
+                item.type === 'location'
+              "
+              (click)="action(item)"
+            >
+              <span aria-hidden="true">{{ actionIcon(item.type) }}</span>
+              {{ item.label }}
+            </button>
+          </div>
+
+          <div
+            class="suggestion-row"
+            *ngIf="last && message.role === 'assistant' && message.suggestions?.length"
+          >
+            <button
+              type="button"
+              *ngFor="let suggestion of message.suggestions; trackBy: trackSuggestion"
+              [disabled]="sending"
+              (click)="send(suggestion.message)"
+            >
+              {{ suggestion.label }}
+            </button>
+          </div>
+
+          <button
+            type="button"
+            class="retry-btn"
+            *ngIf="message.retryable"
+            [disabled]="sending"
+            (click)="retry(message)"
+          >
+            ↻ Reintentar
+          </button>
+        </div>
       </article>
 
-      <p *ngIf="loading" role="status">
-        Consultando…
-      </p>
+      <div class="message-row typing" *ngIf="typing">
+        <div class="avatar assistant" aria-hidden="true">🌿</div>
+        <div class="bubble typing-bubble" role="status">
+          <span></span>
+          <span></span>
+          <span></span>
+          <em>NEXO está pensando…</em>
+        </div>
+      </div>
     </section>
-  </main>
+  </div>
+
+  <div class="composer-dock" slot="fixed">
+    <div class="composer">
+      <button
+        type="button"
+        class="icon-btn mic"
+        [class.listening]="isListening"
+        [disabled]="!voiceSupported || sending"
+        [attr.aria-label]="isListening ? 'Detener el dictado' : 'Dictar la pregunta'"
+        (click)="toggleVoice()"
+      >
+        {{ isListening ? '⏹' : '🎙️' }}
+      </button>
+
+      <textarea
+        id="chat-input"
+        name="draft"
+        rows="1"
+        [(ngModel)]="draft"
+        (keydown)="onKeydown($event)"
+        placeholder="Escribe tu pregunta para NEXO…"
+        aria-label="Escribe tu pregunta para NEXO"
+      ></textarea>
+
+      <button
+        type="button"
+        class="send-btn"
+        [disabled]="!draft.trim() || sending || !isOnline"
+        aria-label="Enviar mensaje"
+        (click)="send()"
+      >
+        {{ sending ? '…' : '➤' }}
+      </button>
+    </div>
+
+    <p class="composer-hint">
+      Enter para enviar · Shift + Enter para una línea nueva ·
+      Las distancias son en línea recta.
+    </p>
+    <p class="voice-error" *ngIf="voiceError" role="alert">
+      {{ voiceError }}
+    </p>
+  </div>
 </ion-content>

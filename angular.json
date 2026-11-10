@@ -48,13 +48,13 @@
               "budgets": [
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "8kb",
-                  "maximumError": "12kb"
+                  "maximumWarning": "10kb",
+                  "maximumError": "16kb"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "8kb",
-                  "maximumError": "12kb"
+                  "maximumWarning": "10kb",
+                  "maximumError": "16kb"
                 }
               ],
               "fileReplacements": [
@@ -79,6 +79,14 @@
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "proxyConfig": "proxy.conf.json",
+            "allowedHosts": [
+              ".ngrok-free.dev",
+              ".ngrok.io",
+              ".ngrok.app"
+            ]
+          },
           "configurations": {
             "production": {
               "buildTarget": "app:build:production"

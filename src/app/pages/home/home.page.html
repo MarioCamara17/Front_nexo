@@ -59,31 +59,39 @@
 
     <div class="section">
       <div class="section-header">
-        <h2>🗺️ Rutas recomendadas</h2>
-        <span class="section-note">Experiencias sugeridas</span>
+        <div>
+          <h2>🗺️ Rutas recomendadas</h2>
+          <span class="section-note">Experiencias sugeridas</span>
+        </div>
+        <a class="section-link" routerLink="/tabs/routes">Ver todas →</a>
       </div>
 
-      <div class="routes-grid">
-        <div class="route-card cultural">
-          <div class="route-badge">Cultural</div>
-          <h3>Ruta Patrimonial de Villahermosa</h3>
-          <p>Descubre espacios emblemáticos, historia regional y patrimonio tabasqueño.</p>
+      <div class="routes-grid" *ngIf="routes.length > 0; else noRoutesHome">
+        <button
+          type="button"
+          class="route-card"
+          *ngFor="let route of routes; trackBy: trackByRouteId; let i = index"
+          [class.cultural]="i % 2 === 0"
+          [class.natural]="i % 2 !== 0"
+          (click)="openRouteInMap(route)"
+        >
+          <div class="route-badge">{{ i % 2 === 0 ? 'Cultural' : 'Naturaleza' }}</div>
+          <h3>{{ route.name }}</h3>
+          <p>{{ route.description }}</p>
           <div class="route-meta">
-            <span>4 lugares</span>
-            <span>200 pts</span>
+            <span>📍 {{ getRoutePoiCount(route.id) }} lugar(es)</span>
+            <span>⏱️ {{ formatDuration(route.duration) }}</span>
           </div>
-        </div>
-
-        <div class="route-card natural">
-          <div class="route-badge">Naturaleza</div>
-          <h3>Ruta Natural de Tabasco</h3>
-          <p>Explora reservas, paisajes y sitios de conexión con la riqueza natural del estado.</p>
-          <div class="route-meta">
-            <span>3 lugares</span>
-            <span>150 pts</span>
-          </div>
-        </div>
+          <span class="route-open">Explorar en el mapa →</span>
+        </button>
       </div>
+
+      <ng-template #noRoutesHome>
+        <div class="home-empty-routes">
+          <p>Aún no hay rutas recomendadas disponibles.</p>
+          <a class="section-link" routerLink="/tabs/routes">Ver rutas</a>
+        </div>
+      </ng-template>
     </div>
 
     <div class="section">

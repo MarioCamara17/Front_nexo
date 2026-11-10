@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 
 /** Perfil de desplazamiento. Los caminos sin pavimentar dependen de los datos OSM y del acceso permitido. */
 export type TravelMode = 'car' | 'secondary' | 'bicycle' | 'foot';
-export type MapStyle = 'street' | 'terrain';
+export type MapStyle = 'street' | 'terrain' | 'satellite';
 export type MapPoint = [number, number]; // [latitud, longitud]
 
 export interface CalculatedRoute {
