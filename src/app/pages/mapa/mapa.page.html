@@ -54,8 +54,15 @@
         </div>
 
         <div class="map-filters" aria-label="Filtrar lugares por categoría">
-          <button class="filter" type="button" *ngFor="let type of ['Todos','Cultura','Naturaleza','Historia','Aventura']"
-            [class.active]="currentFilter === type" (click)="aplicarFiltro(type)">{{type}}</button>
+          <button
+  class="filter"
+  type="button"
+  *ngFor="let type of ['Todos', 'Cultura', 'Naturaleza', 'Historia', 'Aventura', 'Gastronomía']"
+  [class.active]="currentFilter === type"
+  (click)="aplicarFiltro(type)"
+>
+  {{ type }}
+</button>
         </div>
 
         <div class="radius-panel" aria-label="Radio de búsqueda">

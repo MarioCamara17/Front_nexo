@@ -356,8 +356,13 @@ export class MapaPage implements OnInit, OnDestroy {
         this.locationNotice = 'Toca el mapa para elegir tu ubicación de referencia.';
       }
 
-      const routeId = params.get('routeId');
+           const routeId = params.get('routeId');
       if (routeId) {
+        if (params.get('category') === 'Gastronomía') {
+          this.resetFilters();
+          this.currentFilter = 'Gastronomía';
+        }
+
         this.routeFilterId = routeId;
         this.routeFilterName = params.get('routeName') || 'ruta seleccionada';
         this.assistantNotice = `Mostrando los lugares de: ${this.routeFilterName}.`;

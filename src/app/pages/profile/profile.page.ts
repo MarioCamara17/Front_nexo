@@ -100,6 +100,8 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   getActivityIcon(activity: Activity): string {
     switch (activity.action) {
+      case 'visited_station':
+        return '🚉';
       case 'visited_place':
         return '📍';
       case 'favorite_place':

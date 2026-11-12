@@ -164,16 +164,19 @@ export class HomePage implements OnInit, OnDestroy {
   trackByRouteId(index: number, route: Route): string {
     return route.id;
   }
+  isCheeseRoute(route: Route): boolean {
+    return route.name === 'Ruta del Queso de Poro de Balancán';
+  }
 
   openRouteInMap(route: Route): void {
     this.router.navigate(['/tabs/map'], {
       queryParams: {
         routeId: route.id,
-        routeName: route.name
+        routeName: route.name,
+        category: this.isCheeseRoute(route) ? 'Gastronomía' : undefined
       }
     });
   }
-
   doRefresh(event: any) {
     this.favoritesService.refresh();
 

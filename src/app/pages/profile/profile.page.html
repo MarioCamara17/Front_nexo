@@ -11,49 +11,16 @@
           </ion-avatar>
 
           <h2>{{ user.first_name }} {{ user.last_name }}</h2>
-          <p class="user-subtitle">{{ gamification.level }} de Tabasco</p>
         </div>
 
-        <!-- TARJETA DE PUNTAJE -->
         <div class="score-card">
           <div class="score-header">
             <div>
-              <h3>⭐ Puntaje turístico</h3>
-              <span class="score-description">
-                Gana puntos explorando lugares y rutas
-              </span>
+              <h3>Mis Chocopuntos</h3>
+              <span class="score-description">Un registro de tu actividad al explorar NEXO.</span>
             </div>
-
-            <span class="level-badge">{{ gamification.level }}</span>
           </div>
-
           <p class="score-points">{{ gamification.points }} pts</p>
-
-          <div class="progress-label">
-            <span *ngIf="gamification.next_level_points">
-              Progreso hacia el siguiente nivel
-            </span>
-
-            <span *ngIf="!gamification.next_level_points">
-              Nivel máximo alcanzado
-            </span>
-
-            <span *ngIf="gamification.next_level_points">
-              {{ gamification.points_to_next_level }} pts restantes
-            </span>
-
-            <span *ngIf="!gamification.next_level_points">
-              Completado
-            </span>
-          </div>
-
-          <div class="progress-bar">
-            <div
-              class="progress-fill"
-              [style.width.%]="gamification.progress_percent">
-            </div>
-          </div>
-
           <div class="stats-grid">
             <div class="stat-box">
               <strong>{{ gamification.visited_places }}</strong>
@@ -77,80 +44,10 @@
           </div>
         </div>
 
-        <!-- INSIGNIAS -->
-        <div class="section">
-          <div class="section-header">
-            <h3>🏅 Insignias</h3>
-            <span>
-              {{ gamification.unlocked_badges_count }}/{{ gamification.badges.length }} desbloqueadas
-            </span>
-          </div>
-
-          <div class="badges-grid">
-            <div
-              class="badge-card"
-              *ngFor="let badge of gamification.badges"
-              [class.locked]="!badge.unlocked"
-            >
-              <div class="badge-icon">
-                {{ badge.icon }}
-              </div>
-
-              <div class="badge-info">
-                <h4>{{ badge.name }}</h4>
-                <p>{{ badge.description }}</p>
-              </div>
-
-              <span class="badge-status">
-                {{ badge.unlocked ? 'Desbloqueada' : 'Bloqueada' }}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- REGLAS DE PUNTOS -->
-        <div class="section">
-          <div class="section-header">
-            <h3>📊 ¿Cómo ganas puntos?</h3>
-          </div>
-
-          <div class="points-rules">
-            <div class="rule-item">
-              <span>📍 Marcar lugar visitado</span>
-              <strong>+50 pts</strong>
-            </div>
-
-            <div class="rule-item">
-              <span>❤️ Agregar favorito</span>
-              <strong>+10 pts</strong>
-            </div>
-
-            <div class="rule-item">
-              <span>🧭 Crear ruta personalizada</span>
-              <strong>+30 pts</strong>
-            </div>
-
-            <div class="rule-item">
-              <span>🗺️ Completar ruta turística</span>
-              <strong>+150 pts</strong>
-            </div>
-
-            <div class="rule-item">
-              <span>💬 Usar chatbot</span>
-              <strong>+5 pts</strong>
-            </div>
-
-            <div class="rule-item">
-              <span>👓 Experiencia RA</span>
-              <strong>+80 pts</strong>
-            </div>
-          </div>
-        </div>
-
         <!-- ACTIVIDAD RECIENTE -->
         <div class="section">
           <div class="section-header">
-            <h3>🕒 Actividad reciente</h3>
+            <h3>Actividad reciente</h3>
           </div>
 
           <div
@@ -184,6 +81,78 @@
             </div>
           </ng-template>
         </div>
+
+
+        <details class="section">
+          <summary>Acciones que suman Chocopuntos</summary>
+          <p>Los Chocopuntos tienen un fin informativo y carecen de valor económico y de canje.</p>
+          <div class="points-rules">
+            <div class="rule-item"><span>Registrar la visita a un lugar</span><strong>+50 pts</strong></div>
+            <div class="rule-item"><span>Guardar un lugar en Favoritos</span><strong>+10 pts</strong></div>
+            <div class="rule-item"><span>Crear una ruta personalizada</span><strong>+30 pts</strong></div>
+            <div class="rule-item"><span>Confirmar la visita a una estación del Tren Maya</span><strong>+20 pts</strong></div>
+          </div>
+          <p>La visita al Tren Maya suma puntos una vez por cuenta y estación, tras comprobar la cercanía.</p>
+        </details>
+
+        <details class="section">
+          <summary>Nivel e insignias</summary>
+          <p>Nivel actual: {{ gamification.level }}</p>
+          <div class="progress-label">
+            <span *ngIf="gamification.next_level_points">
+              Progreso hacia el siguiente nivel
+            </span>
+
+            <span *ngIf="!gamification.next_level_points">
+              Nivel máximo alcanzado
+            </span>
+
+            <span *ngIf="gamification.next_level_points">
+              {{ gamification.points_to_next_level }} pts restantes
+            </span>
+
+            <span *ngIf="!gamification.next_level_points">
+              Completado
+            </span>
+          </div>
+
+          <div class="progress-bar" role="progressbar" aria-label="Progreso de exploración"
+            [attr.aria-valuenow]="gamification.progress_percent">
+            <div
+              class="progress-fill"
+              [style.width.%]="gamification.progress_percent">
+            </div>
+          </div>
+          <div class="section-header">
+            <h3>🏅 Insignias</h3>
+            <span>
+              {{ gamification.unlocked_badges_count }}/{{ gamification.badges.length }} desbloqueadas
+            </span>
+          </div>
+
+          <div class="badges-grid">
+            <div
+              class="badge-card"
+              *ngFor="let badge of gamification.badges"
+              [class.locked]="!badge.unlocked"
+              [class.top-badge]="badge.is_top_level"
+            >
+              <div class="badge-icon">
+                {{ badge.icon }}
+              </div>
+
+              <div class="badge-info">
+                <span class="top-badge-label" *ngIf="badge.is_top_level">Nivel máximo</span>
+                <h4>{{ badge.name }}</h4>
+                <p>{{ badge.description }}</p>
+              </div>
+
+              <span class="badge-status">
+                {{ badge.unlocked ? 'Desbloqueada' : 'Bloqueada' }}
+              </span>
+            </div>
+          </div>
+        </details>
 
       </ng-container>
 
