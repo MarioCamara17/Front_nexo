@@ -92,7 +92,7 @@ export class LeafletMapComponent implements OnInit, OnChanges, OnDestroy {
         showCoverageOnHover: false,
         spiderfyOnMaxZoom: true,
         disableClusteringAtZoom: 15,
-        iconCreateFunction: (cluster) => L.divIcon({
+       iconCreateFunction: (cluster: L.MarkerCluster) => L.divIcon({
           className: 'nexo-cluster',
           html: '<span>' + cluster.getChildCount() + '</span>',
           iconSize: [44, 44],

@@ -71,11 +71,11 @@
           type="button"
           class="route-card"
           *ngFor="let route of routes; trackBy: trackByRouteId; let i = index"
-          [class.cultural]="i % 2 === 0"
-          [class.natural]="i % 2 !== 0"
+                    [class.cultural]="isCheeseRoute(route) || i % 2 === 0"
+          [class.natural]="!isCheeseRoute(route) && i % 2 !== 0"
           (click)="openRouteInMap(route)"
         >
-          <div class="route-badge">{{ i % 2 === 0 ? 'Cultural' : 'Naturaleza' }}</div>
+          <div class="route-badge">{{ isCheeseRoute(route) ? 'Gastronomía' : (i % 2 === 0 ? 'Cultural' : 'Naturaleza') }}</div>
           <h3>{{ route.name }}</h3>
           <p>{{ route.description }}</p>
           <div class="route-meta">

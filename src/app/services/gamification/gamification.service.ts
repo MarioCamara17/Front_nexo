@@ -7,6 +7,7 @@ export interface Badge {
   name: string;
   description: string;
   unlocked: boolean;
+  is_top_level?: boolean;
 }
 
 export interface Activity {

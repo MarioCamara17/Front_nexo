@@ -358,3 +358,21 @@
     justify-self: flex-start;
   }
 }
+
+.badge-card.top-badge {
+  border-left-color: #a36d1a;
+  background: #fffaf0;
+  opacity: 1;
+}
+
+.badge-card.top-badge .badge-icon {
+  background: #f9edcf;
+}
+
+.top-badge-label {
+  display: block;
+  margin-bottom: 4px;
+  color: #754a0d;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
